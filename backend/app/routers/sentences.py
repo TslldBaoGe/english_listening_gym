@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.db.database import get_db
 from app.db.models import Sentence
 from app.db import vector_store
@@ -90,6 +90,22 @@ def list_sentences(page: int = 1, size: int = 20, difficulty: str | None = None,
         {"id": s.id, "text": s.text, "translation": s.translation,
          "difficulty": s.difficulty_code, "topic": s.topic,
          "wrong_count": s.wrong_count, "total_count": s.total_count,
+         "audio_url": f"/api/audio/{s.id}"} for s in rows]}
+
+
+@router.get("/random")
+def random_sentences(count: int = 1, difficulty: str | None = None,
+                     db: Session = Depends(get_db)):
+    """测验用：从知识库随机抽句（不生成干扰项、不调 LLM）。"""
+    q = select(Sentence).order_by(func.random())
+    if difficulty:
+        q = q.where(Sentence.difficulty_code == difficulty)
+    rows = db.scalars(q.limit(max(1, min(count, 5)))).all()
+    if not rows:
+        raise HTTPException(404, "知识库为空，请先生成句子")
+    return {"sentences": [
+        {"id": s.id, "text": s.text, "translation": s.translation,
+         "difficulty": s.difficulty_code, "topic": s.topic,
          "audio_url": f"/api/audio/{s.id}"} for s in rows]}
 
 
