@@ -3,8 +3,12 @@
     <div class="bg-glow bg-glow-1"></div>
     <div class="bg-glow bg-glow-2"></div>
     <div class="bg-glow bg-glow-3"></div>
+    <div class="bg-aurora"></div>
     <canvas ref="canvasRef" class="bg-canvas"></canvas>
     <div class="bg-grid"></div>
+    <div class="grid-floor"></div>
+    <div class="scanline"></div>
+    <div class="vignette"></div>
   </div>
 </template>
 
@@ -175,11 +179,74 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(56, 189, 248, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.05) 1px, transparent 1px);
   background-size: 44px 44px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(0,0,0,.7), transparent 75%);
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(0,0,0,.7), transparent 75%);
+}
+
+/* 仿参考站：透视网格地面，底部斜置并向上滚动 */
+.grid-floor {
+  position: absolute;
+  left: -50%;
+  bottom: -32vh;
+  width: 200%;
+  height: 60vh;
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.10) 1px, transparent 1px);
+  background-size: 64px 64px;
+  transform: perspective(420px) rotateX(64deg);
+  animation: gridScroll 2.4s linear infinite;
+  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,.85) 15%, transparent 80%);
+  mask-image: linear-gradient(to top, rgba(0,0,0,.85) 15%, transparent 80%);
+}
+
+@keyframes gridScroll {
+  from { background-position-y: 0; }
+  to   { background-position-y: 64px; }
+}
+
+/* 仿参考站：极光层（大块模糊流动光晕，高饱和） */
+.bg-aurora {
+  position: absolute;
+  inset: -8%;
+  filter: blur(60px) saturate(1.4);
+  opacity: 0.55;
+  background:
+    radial-gradient(ellipse 40% 30% at 20% 30%, rgba(56, 189, 248, 0.18), transparent 70%),
+    radial-gradient(ellipse 35% 28% at 75% 20%, rgba(168, 85, 247, 0.14), transparent 70%),
+    radial-gradient(ellipse 45% 32% at 55% 75%, rgba(56, 189, 248, 0.10), transparent 70%),
+    radial-gradient(ellipse 30% 25% at 30% 85%, rgba(244, 114, 182, 0.08), transparent 70%);
+  animation: auroraShift 18s ease-in-out infinite alternate;
+}
+
+@keyframes auroraShift {
+  from { transform: translateX(-3%) scale(1.02); }
+  to   { transform: translateX(3%) scale(1.08); }
+}
+
+/* 仿参考站：扫描线，缓慢下移 */
+.scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 140px;
+  background: linear-gradient(to bottom, transparent, rgba(56, 189, 248, 0.05), transparent);
+  animation: scanMove 9s linear infinite;
+}
+
+@keyframes scanMove {
+  from { top: -20%; }
+  to   { top: 120%; }
+}
+
+/* 仿参考站：暗角，聚焦画面中心 */
+.vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 8, 0.65) 100%);
 }
 
 .bg-glow {
@@ -233,6 +300,6 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bg-glow { animation: none; }
+  .bg-glow, .grid-floor, .bg-aurora, .scanline { animation: none; }
 }
 </style>
