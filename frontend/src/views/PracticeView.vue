@@ -2,7 +2,7 @@
   <div class="page">
     <div class="section-tag">// 01 · PRACTICE</div>
     <h1 class="hero-title">生成新句子 · 练听力</h1>
-    <p class="hero-sub mono">AI SPEECH TRAINER — LISTEN · RECALL · REPEAT<span class="cursor">▮</span></p>
+    <p class="hero-sub mono">AI SPEECH TRAINER — <span class="hl-green">LISTEN</span> · <span class="hl-cyan">RECALL</span> · <span class="hl-purple">REPEAT</span><span class="cursor">▮</span></p>
 
     <div class="card" style="margin-bottom:20px">
       <el-form inline>

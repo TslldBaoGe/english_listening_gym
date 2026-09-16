@@ -12,7 +12,7 @@ html, body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: 'Noto Sans SC', 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
 }
 
 .mono {
@@ -133,6 +133,8 @@ html, body {
   border-radius: 8px;
   color: var(--text-dim);
   font-size: 14px;
+  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  letter-spacing: 1px;
   text-decoration: none;
   white-space: nowrap;
   transition: color .2s, background .2s, text-shadow .2s;
@@ -166,27 +168,38 @@ html, body {
   color: var(--accent);
 }
 
-/* Hero 标题：参考 reverse.apivix.com 的代码风大标题 */
+/* Hero 标题：仿 reverse.apivix.com 的多彩分层渐变大标题 */
 .hero-title {
-  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
-  font-size: clamp(26px, 5vw, 40px);
+  font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  font-size: clamp(28px, 5.2vw, 44px);
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   line-height: 1.25;
-  margin: 0 0 8px;
-  color: #e6edf3;
-  background: linear-gradient(92deg, #e6edf3 30%, var(--accent) 75%, var(--accent-2));
+  margin: 0 0 10px;
+  background: linear-gradient(180deg, #eafcff 12%, #7fe6ff 42%, #38bdf8 68%, #a855f7 100%);
   -webkit-background-clip: text;
   background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 0 24px rgba(56, 189, 248, 0.35));
 }
 
 .hero-sub {
   font-family: Consolas, monospace;
   font-size: 13px;
-  color: var(--text-dim);
-  letter-spacing: 1px;
+  color: rgba(140, 210, 255, 0.6);
+  letter-spacing: 2px;
   margin: 0 0 20px;
+}
+
+.hero-sub .hl-cyan { color: #7fe6ff; }
+.hero-sub .hl-green { color: var(--accent); }
+.hero-sub .hl-purple { color: #a855f7; }
+
+/* 分区标题：雅黑 + 字距 + 亮色，卡片标题同理 */
+.page h1, .page h2, .page h3 {
+  font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  letter-spacing: 2px;
+  color: #eafcff;
 }
 
 .hero-sub .cursor {
