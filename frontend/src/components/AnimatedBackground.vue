@@ -227,19 +227,19 @@ onBeforeUnmount(() => {
   to   { transform: translateX(3%) scale(1.08); }
 }
 
-/* 仿参考站：扫描线，缓慢下移 */
+/* 仿参考站：扫描线改为横扫，竖光带从左向右移动 */
 .scanline {
   position: absolute;
-  left: 0;
-  right: 0;
-  height: 140px;
-  background: linear-gradient(to bottom, transparent, rgba(56, 189, 248, 0.05), transparent);
+  top: 0;
+  bottom: 0;
+  width: 140px;
+  background: linear-gradient(to right, transparent, rgba(56, 189, 248, 0.05), transparent);
   animation: scanMove 9s linear infinite;
 }
 
 @keyframes scanMove {
-  from { top: -20%; }
-  to   { top: 120%; }
+  from { left: -20%; }
+  to   { left: 120%; }
 }
 
 /* 仿参考站：暗角，聚焦画面中心 */
