@@ -75,13 +75,13 @@ function tick() {
     ctx.beginPath()
     ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2)
     ctx.fillStyle = s.green
-      ? `rgba(0, 255, 204, ${a})`
+      ? `rgba(56, 189, 248, ${a})`
       : `rgba(200, 225, 255, ${a * 0.8})`
     ctx.fill()
     // 拖尾：亮星带一条细尾迹
     if (s.r > 1.3 * dpr) {
       ctx.strokeStyle = s.green
-        ? `rgba(0, 255, 204, ${a * 0.25})`
+        ? `rgba(56, 189, 248, ${a * 0.25})`
         : `rgba(200, 225, 255, ${a * 0.15})`
       ctx.lineWidth = s.r * 0.6
       ctx.beginPath()
@@ -105,7 +105,7 @@ function tick() {
     const nx = m.x - m.vx * (m.len / Math.hypot(m.vx, m.vy))
     const ny = m.y - m.vy * (m.len / Math.hypot(m.vx, m.vy))
     const grad = ctx.createLinearGradient(m.x, m.y, nx, ny)
-    const head = m.green ? '0, 255, 204' : '190, 220, 255'
+    const head = m.green ? '56, 189, 248' : '190, 220, 255'
     grad.addColorStop(0, `rgba(255, 255, 255, ${0.9 * fade})`)
     grad.addColorStop(0.15, `rgba(${head}, ${0.7 * fade})`)
     grad.addColorStop(1, `rgba(${head}, 0)`)
@@ -140,7 +140,7 @@ onMounted(() => {
       ctx.beginPath()
       ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2)
       ctx.fillStyle = s.green
-        ? `rgba(0, 255, 204, ${s.alpha})`
+        ? `rgba(56, 189, 248, ${s.alpha})`
         : `rgba(200, 225, 255, ${s.alpha * 0.8})`
       ctx.fill()
     }
@@ -161,8 +161,8 @@ onBeforeUnmount(() => {
   pointer-events: none;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0, 255, 204, 0.06), transparent 60%),
-    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(34, 211, 238, 0.05), transparent 60%),
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(56, 189, 248, 0.06), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(168, 85, 247, 0.05), transparent 60%),
     var(--bg);
 }
 
@@ -195,7 +195,7 @@ onBeforeUnmount(() => {
   height: 480px;
   left: -140px;
   top: -120px;
-  background: radial-gradient(circle, rgba(0, 255, 204, 0.13), transparent 70%);
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.13), transparent 70%);
   animation: drift1 26s ease-in-out infinite alternate;
 }
 
@@ -204,7 +204,7 @@ onBeforeUnmount(() => {
   height: 420px;
   right: -120px;
   top: 30%;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.1), transparent 70%);
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.1), transparent 70%);
   animation: drift2 32s ease-in-out infinite alternate;
 }
 
@@ -213,7 +213,7 @@ onBeforeUnmount(() => {
   height: 520px;
   left: 30%;
   bottom: -220px;
-  background: radial-gradient(circle, rgba(0, 255, 204, 0.08), transparent 70%);
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.08), transparent 70%);
   animation: drift3 38s ease-in-out infinite alternate;
 }
 
