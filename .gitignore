@@ -1,8 +1,14 @@
 node_modules/
 dist/
+# 本地数据:app.db 存有 LLM API 密钥、audio/ 音频缓存、chroma/ 向量库,绝不能上传
+backend/data/
 .env
 *.log
 .DS_Store
 Thumbs.db
 __pycache__/
 *.pyc
+.venv/
+venv/
+.vscode/
+.idea/
