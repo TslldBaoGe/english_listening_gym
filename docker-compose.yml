@@ -10,7 +10,6 @@ services:
     volumes:
       - english_listening_data:/app/data
     environment:
-      - ZHIPU_API_KEY=${ZHIPU_API_KEY:-}
       - LLM_MODEL=${LLM_MODEL:-glm-4-flash}
     restart: unless-stopped
     healthcheck:
