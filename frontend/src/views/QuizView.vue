@@ -102,6 +102,6 @@ async function choose(opt) {
   transition: all .15s;
 }
 .option:hover { border-color: var(--accent); }
-.option.right { border-color: var(--accent); background: rgba(0,255,156,.08); }
+.option.right { border-color: var(--accent); background: rgba(0,255,204,.08); }
 .option.wrong { border-color: #f56c6c; background: rgba(245,108,108,.08); }
 </style>
