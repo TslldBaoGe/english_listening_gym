@@ -1,7 +1,8 @@
 <template>
   <div class="page">
     <div class="section-tag">// 01 · PRACTICE</div>
-    <h2 style="color:#e6edf3;margin:0 0 20px">生成新句子 · 练听力</h2>
+    <h1 class="hero-title">生成新句子 · 练听力</h1>
+    <p class="hero-sub mono">AI SPEECH TRAINER — LISTEN · RECALL · REPEAT<span class="cursor">▮</span></p>
 
     <div class="card" style="margin-bottom:20px">
       <el-form inline>

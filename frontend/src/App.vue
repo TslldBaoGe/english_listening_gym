@@ -1,21 +1,35 @@
 <template>
-  <el-container style="min-height:100vh">
-    <el-header style="padding:0">
-      <div class="navbar" style="background:#0a0a0f;border-bottom:1px solid var(--border)">
-        <el-menu mode="horizontal" router :default-active="$route.path"
-                 style="max-width:1080px;margin:0 auto;border:none">
-          <span class="mono" style="font-size:18px;color:var(--accent);align-self:center;
-            margin-right:32px;font-weight:700">&lt;EL&gt;</span>
-          <el-menu-item index="/practice">练习</el-menu-item>
-          <el-menu-item index="/quiz">测验</el-menu-item>
-          <el-menu-item index="/stats">统计</el-menu-item>
-          <el-menu-item index="/library">知识库</el-menu-item>
-          <el-menu-item index="/settings">设置</el-menu-item>
-        </el-menu>
-      </div>
+  <AnimatedBackground />
+  <el-container style="min-height:100vh;position:relative;z-index:1">
+    <el-header style="padding:0;height:auto">
+      <nav class="navbar">
+        <div class="nav-inner">
+          <router-link to="/practice" class="nav-logo mono">
+            &lt;EL&gt;<span class="nav-logo-sub">ENGLISH·LISTENING</span>
+          </router-link>
+          <div class="nav-links">
+            <router-link v-for="item in navItems" :key="item.to" :to="item.to"
+                         class="nav-link mono" :class="{ active: $route.path === item.to }">
+              <span class="nav-idx">{{ item.idx }}</span>{{ item.label }}
+            </router-link>
+          </div>
+        </div>
+      </nav>
     </el-header>
     <el-main style="padding:0">
       <router-view />
     </el-main>
   </el-container>
 </template>
+
+<script setup>
+import AnimatedBackground from './components/AnimatedBackground.vue'
+
+const navItems = [
+  { to: '/practice', idx: '01', label: '练习' },
+  { to: '/quiz', idx: '02', label: '测验' },
+  { to: '/stats', idx: '03', label: '统计' },
+  { to: '/library', idx: '04', label: '知识库' },
+  { to: '/settings', idx: '05', label: '设置' },
+]
+</script>
