@@ -1,0 +1,17 @@
+# .dockerignore — files to exclude from Docker build context
+
+.git
+.gitignore
+.gitattributes
+
+node_modules/
+backend/data/audio/
+backend/data/chroma/
+
+docs/
+start.bat
+stop.bat
+push-to-github.cmd
+deploy/
+README.md
+.env

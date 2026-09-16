@@ -1,0 +1,38 @@
+services:
+  # ── Backend: FastAPI + ChromaDB + Edge-TTS ──────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: el-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - english_listening_data:/app/data
+    environment:
+      - ZHIPU_API_KEY=${ZHIPU_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-glm-4-flash}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/meta"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── Frontend: Nginx serving Vue SPA ────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: el-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  english_listening_data:
+    name: english_listening_data
