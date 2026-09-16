@@ -1,0 +1,109 @@
+:root {
+  --bg: #0a0a0f;
+  --bg-card: #12121a;
+  --border: rgba(148, 163, 184, 0.16);
+  --accent: #00ff9c;
+  --accent-2: #22d3ee;
+  --text: #c9d1d9;
+  --text-dim: #8b949e;
+}
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans SC', 'Segoe UI', system-ui, sans-serif;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+}
+
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+.section-tag {
+  font-family: Consolas, monospace;
+  color: var(--accent);
+  font-size: 13px;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.card:hover {
+  border-color: rgba(0, 255, 156, .4);
+  box-shadow: 0 0 18px rgba(0, 255, 156, .08);
+}
+
+.glow-btn {
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  background: transparent !important;
+}
+
+.glow-btn:hover {
+  background: rgba(0, 255, 156, .1) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 156, .3);
+}
+
+/* Element Plus 暗色适配 */
+.el-card, .el-table, .el-table tr, .el-table th.el-table__cell {
+  background-color: var(--bg-card) !important;
+  color: var(--text) !important;
+}
+
+.el-table td.el-table__cell, .el-table th.el-table__cell.is-leaf {
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell {
+  background: rgba(0, 255, 156, .05) !important;
+}
+
+.navbar .el-menu {
+  background: transparent !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.navbar .el-menu-item {
+  color: var(--text-dim) !important;
+}
+
+.navbar .el-menu-item.is-active {
+  color: var(--accent) !important;
+}
+
+/* 手机等窄屏：导航栏可横向滚动，避免菜单撑破页面 */
+@media (max-width: 720px) {
+  .page {
+    padding: 16px 12px 48px;
+  }
+  .navbar .el-menu {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  .navbar .el-menu::-webkit-scrollbar {
+    display: none;
+  }
+  .navbar .el-menu-item {
+    padding: 0 11px !important;
+    font-size: 15px;
+  }
+  .navbar .el-menu > span.mono {
+    margin-right: 10px !important;
+    font-size: 16px !important;
+  }
+}

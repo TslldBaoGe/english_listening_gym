@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+chromadb
+edge-tts
+zhipuai
+pydantic
+requests
