@@ -21,4 +21,6 @@ def get_audio(sentence_id: int, rate: float = 1.0, db: Session = Depends(get_db)
         path = tts.synthesize(sentence_id, s.text, s.voice, rate)
     except Exception:
         raise HTTPException(502, "音频合成失败，请稍后重试")
-    return FileResponse(path, media_type="audio/mpeg")
+    # 音频按 句子id+语速 命名且生成后不再变化，让浏览器直接吃缓存，省掉每次重播的往返
+    return FileResponse(path, media_type="audio/mpeg",
+                        headers={"Cache-Control": "public, max-age=86400"})
