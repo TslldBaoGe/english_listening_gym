@@ -50,10 +50,6 @@
                          @click="fetchModels">获取模型</el-button>
             </div>
           </el-form-item>
-          <el-form-item label="网络">
-            <el-checkbox v-model="llm.no_proxy">不使用系统代理（直连）</el-checkbox>
-            <div class="cfg-hint">开着代理软件时，有些中转会拒绝代理出口 IP 并返回 403 拦截页，勾上这个可绕过；被拦截时程序也会自动直连重试一次。</div>
-          </el-form-item>
           <el-form-item>
             <el-button class="glow-btn" type="primary" plain :loading="saving" @click="saveLlm">
               {{ llm.id ? '保存修改' : '新增配置' }}</el-button>
@@ -129,7 +125,7 @@ const editing = ref(false)        // 是否展开编辑表单
 const legacy = ref({})            // 旧的单条配置（列表为空时可一键导入）
 const form = reactive({ difficulty: 'L1', topic: 'daily life', voice: 'aria', rate: 1.0 })
 const llm = reactive({ id: '', name: '', provider: 'custom', base_url: '', api_key: '',
-                       model: '', no_proxy: false })
+                       model: '' })
 const saving = ref(false)
 const testing = ref(false)
 const testMsg = ref('')
@@ -177,14 +173,14 @@ function onPick(id) {
 
 function fill(c) {
   Object.assign(llm, { id: c.id, name: c.name, provider: 'custom', base_url: c.base_url,
-                       api_key: c.api_key, model: c.model, no_proxy: !!c.no_proxy })
+                       api_key: c.api_key, model: c.model })
   modelList.value = []   // 换配置后旧模型列表失效
   testMsg.value = ''
 }
 
 function resetForm() {
   Object.assign(llm, { id: '', name: '', provider: 'custom',
-                       base_url: '', api_key: '', model: '', no_proxy: false })
+                       base_url: '', api_key: '', model: '' })
   modelList.value = []
   testMsg.value = ''
 }
@@ -218,7 +214,7 @@ async function saveLlm() {
   try {
     const { data } = await api.post('/settings/llm/configs', {
       id: llm.id || undefined, name: llm.name, base_url: llm.base_url,
-      api_key: llm.api_key, model: llm.model, no_proxy: llm.no_proxy,
+      api_key: llm.api_key, model: llm.model,
       make_active: true,
     })
     configs.value = data.items

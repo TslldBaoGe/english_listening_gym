@@ -82,7 +82,6 @@ def _merged_llm_cfg(body: dict) -> dict:
         "base_url": (body.get("base_url") or saved["base_url"]).rstrip("/"),
         "api_key": api_key,
         "model": body.get("model") or saved["model"],
-        "no_proxy": bool(body.get("no_proxy", saved.get("no_proxy", False))),
     }
 
 

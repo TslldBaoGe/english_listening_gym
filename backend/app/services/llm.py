@@ -37,11 +37,8 @@ def _blocked_by_proxy(resp) -> bool:
             and "html" in (resp.headers.get("content-type") or "").lower())
 
 
-def _post(url: str, headers: dict, payload: dict, timeout: int, no_proxy: bool = False):
-    """POST 请求；no_proxy 时强制直连，否则被代理拦截时自动直连重试一次。"""
-    if no_proxy:
-        with _direct_session() as s:
-            return s.post(url, headers=headers, json=payload, timeout=timeout)
+def _post(url: str, headers: dict, payload: dict, timeout: int):
+    """POST 请求；万一被本机代理网关拦截（403 拦截页），自动直连重试一次。"""
     resp = requests.post(url, headers=headers, json=payload, timeout=timeout)
     if _blocked_by_proxy(resp):
         with _direct_session() as s:
@@ -51,11 +48,8 @@ def _post(url: str, headers: dict, payload: dict, timeout: int, no_proxy: bool =
     return resp
 
 
-def _get(url: str, headers: dict, timeout: int, no_proxy: bool = False):
+def _get(url: str, headers: dict, timeout: int):
     """GET 请求；同 _post，代理拦截时自动直连重试。"""
-    if no_proxy:
-        with _direct_session() as s:
-            return s.get(url, headers=headers, timeout=timeout)
     resp = requests.get(url, headers=headers, timeout=timeout)
     if _blocked_by_proxy(resp):
         with _direct_session() as s:
@@ -72,7 +66,6 @@ def _norm(item: dict) -> dict:
         "base_url": str(item.get("base_url") or "").rstrip("/"),
         "api_key": str(item.get("api_key") or ""),
         "model": str(item.get("model") or ""),
-        "no_proxy": bool(item.get("no_proxy")),
     }
 
 
@@ -123,7 +116,7 @@ def _payload(items: list[dict], active_id: str, focus_id: str = "") -> dict:
     return {
         "items": [{"id": i["id"], "name": i["name"], "base_url": i["base_url"],
                    "api_key": mask_key(i["api_key"]), "has_key": bool(i["api_key"]),
-                   "model": i["model"], "no_proxy": i["no_proxy"],
+                   "model": i["model"],
                    "active": i["id"] == active_id} for i in items],
         "active_id": active_id,
         "focus_id": focus_id,
@@ -192,8 +185,7 @@ def save_llm_config(cfg: dict) -> dict:
         data = {"name": str(cfg.get("name") or "").strip() or "未命名配置",
                 "base_url": str(cfg.get("base_url") or "").strip().rstrip("/"),
                 "api_key": key,
-                "model": str(cfg.get("model") or "").strip(),
-                "no_proxy": bool(cfg.get("no_proxy"))}
+                "model": str(cfg.get("model") or "").strip()}
         if cur is None:
             cur = _norm(data)
             items.append(cur)
@@ -269,14 +261,13 @@ def test_llm_config(cfg: dict) -> tuple[bool, str]:
             payload={"model": cfg["model"],
                      "messages": [{"role": "user", "content": "hi"}],
                      "max_tokens": 5},
-            timeout=20,
-            no_proxy=bool(cfg.get("no_proxy")))
+            timeout=20)
         if resp.status_code == 200:
             return True, "连接成功"
         if _blocked_by_proxy(resp):
             return False, (f"HTTP {resp.status_code}: {resp.text[:160]}\n"
                            "这是本机代理网关的拦截页（直连重试也没通）。"
-                           "请在代理软件里把该域名设为直连，或勾选「不使用系统代理」。")
+                           "请在代理软件里把这个域名设为直连，或临时关掉代理软件。")
         return False, f"HTTP {resp.status_code}: {resp.text[:200]}"
     except Exception as e:
         return False, str(e)
@@ -293,13 +284,13 @@ def list_models(cfg: dict) -> tuple[bool, str, list[str]]:
     try:
         resp = _get(f"{base_url}/models",
                     headers={"Authorization": f"Bearer {api_key}"},
-                    timeout=20, no_proxy=bool(cfg.get("no_proxy")))
+                    timeout=20)
         if resp.status_code != 200:
             msg = f"HTTP {resp.status_code}: {resp.text[:200]}"
             if _blocked_by_proxy(resp):
                 msg = (f"HTTP {resp.status_code}: {resp.text[:160]}\n"
                        "这是本机代理网关的拦截页（直连重试也没通）。"
-                       "请在代理软件里把该域名设为直连，或勾选「不使用系统代理」。")
+                       "请在代理软件里把这个域名设为直连，或临时关掉代理软件。")
             return False, msg, []
         data = resp.json().get("data", [])
         models = sorted(str(m.get("id", "")) for m in data if m.get("id"))
@@ -318,8 +309,7 @@ def _chat(prompt: str, system: str = "You are an English teaching expert.") -> s
         payload={"model": cfg["model"], "temperature": 0.8,
                  "messages": [{"role": "system", "content": system},
                               {"role": "user", "content": prompt}]},
-        timeout=60,
-        no_proxy=bool(cfg.get("no_proxy")))
+        timeout=60)
     if resp.status_code != 200:
         raise RuntimeError(f"LLM 请求失败 HTTP {resp.status_code}: {resp.text[:200]}")
     return resp.json()["choices"][0]["message"]["content"]
