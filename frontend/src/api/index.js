@@ -11,6 +11,7 @@ api.deleteSentence = (id) => api.delete(`/sentences/${id}`)
 api.nextQuiz = (params) => api.get('/quiz/next', { params })
 api.submitQuiz = (data) => api.post('/quiz/submit', data)
 api.stats = () => api.get('/stats')
+api.deleteWrong = (id) => api.delete(`/stats/wrong/${id}`)
 api.getSettings = () => api.get('/settings')
 api.putSettings = (data) => api.put('/settings', data)
 

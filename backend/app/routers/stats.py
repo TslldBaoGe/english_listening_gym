@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from app.db.database import get_db
@@ -36,3 +36,17 @@ def stats(db: Session = Depends(get_db)):
         "worst_sentences": [{"id": s.id, "text": s.text, "translation": s.translation,
                              "wrong_count": s.wrong_count} for s in worst],
     }
+
+
+@router.delete("/wrong/{sentence_id}")
+def delete_wrong(sentence_id: int, db: Session = Depends(get_db)):
+    """把一道题移出错题本：错误次数清零。
+
+    句子本身、音频、向量都保留在知识库里（要彻底删除请用 04 知识库的删除）。
+    """
+    s = db.get(Sentence, sentence_id)
+    if not s:
+        raise HTTPException(404, "句子不存在")
+    s.wrong_count = 0
+    db.commit()
+    return {"ok": True, "id": sentence_id}

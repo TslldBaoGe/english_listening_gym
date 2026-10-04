@@ -29,9 +29,13 @@
 
     <div class="card">
       <div class="section-tag">错题 TOP 10</div>
-      <div v-for="w in s.worst_sentences || []" :key="w.id" style="padding:8px 0;border-bottom:1px solid var(--border)">
-        <span class="mono" style="color:#f56c6c">✗{{ w.wrong_count }}</span>
-        <span class="mono" style="margin-left:10px">{{ w.text }}</span>
+      <div v-for="w in s.worst_sentences || []" :key="w.id" class="wrong-row">
+        <div class="wrong-text">
+          <span class="mono" style="color:#f56c6c">✗{{ w.wrong_count }}</span>
+          <span class="mono" style="margin-left:10px">{{ w.text }}</span>
+        </div>
+        <el-button size="small" plain type="danger" :loading="deleting === w.id"
+                   @click="removeWrong(w)">删除</el-button>
       </div>
       <el-empty v-if="!(s.worst_sentences || []).length" description="还没有错题，继续加油" :image-size="60" />
     </div>
@@ -40,7 +44,38 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api'
 const s = ref({})
-onMounted(async () => { s.value = (await api.stats()).data })
+const deleting = ref(0)
+
+async function load() {
+  s.value = (await api.stats()).data
+}
+
+onMounted(load)
+
+async function removeWrong(w) {
+  try {
+    await ElMessageBox.confirm(
+      '把这道错题从错题本移除（错误次数清零）？句子和音频仍保留在 04 知识库。',
+      '删除错题', { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' })
+  } catch { return }   // 用户取消
+  deleting.value = w.id
+  try {
+    await api.deleteWrong(w.id)
+    await load()
+    ElMessage.success('已移出错题本')
+  } catch (e) {
+    ElMessage.error(e.response?.data?.detail || '删除失败')
+  } finally { deleting.value = 0 }
+}
 </script>
+
+<style scoped>
+.wrong-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.wrong-text { flex: 1; min-width: 0; word-break: break-word; }
+</style>
