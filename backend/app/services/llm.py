@@ -20,6 +20,51 @@ def mask_key(key: str) -> str:
     return (key[:6] + "***") if key else ""
 
 
+def _direct_session() -> requests.Session:
+    """忽略系统代理/环境变量代理的会话，用于强制直连。"""
+    s = requests.Session()
+    s.trust_env = False
+    return s
+
+
+def _blocked_by_proxy(resp) -> bool:
+    """判断响应是不是本机代理网关返回的 HTML 拦截页。
+
+    典型是 Squid 的「ERROR: ACCESS DENIED ... web cache」页面，
+    走代理时才会出现，直连同一个地址是正常的。
+    """
+    return (resp.status_code in (403, 407)
+            and "html" in (resp.headers.get("content-type") or "").lower())
+
+
+def _post(url: str, headers: dict, payload: dict, timeout: int, no_proxy: bool = False):
+    """POST 请求；no_proxy 时强制直连，否则被代理拦截时自动直连重试一次。"""
+    if no_proxy:
+        with _direct_session() as s:
+            return s.post(url, headers=headers, json=payload, timeout=timeout)
+    resp = requests.post(url, headers=headers, json=payload, timeout=timeout)
+    if _blocked_by_proxy(resp):
+        with _direct_session() as s:
+            retry = s.post(url, headers=headers, json=payload, timeout=timeout)
+        if retry.status_code == 200:
+            return retry
+    return resp
+
+
+def _get(url: str, headers: dict, timeout: int, no_proxy: bool = False):
+    """GET 请求；同 _post，代理拦截时自动直连重试。"""
+    if no_proxy:
+        with _direct_session() as s:
+            return s.get(url, headers=headers, timeout=timeout)
+    resp = requests.get(url, headers=headers, timeout=timeout)
+    if _blocked_by_proxy(resp):
+        with _direct_session() as s:
+            retry = s.get(url, headers=headers, timeout=timeout)
+        if retry.status_code == 200:
+            return retry
+    return resp
+
+
 def _norm(item: dict) -> dict:
     return {
         "id": str(item.get("id") or uuid.uuid4().hex[:8]),
@@ -27,6 +72,7 @@ def _norm(item: dict) -> dict:
         "base_url": str(item.get("base_url") or "").rstrip("/"),
         "api_key": str(item.get("api_key") or ""),
         "model": str(item.get("model") or ""),
+        "no_proxy": bool(item.get("no_proxy")),
     }
 
 
@@ -83,7 +129,8 @@ def _payload(items: list[dict], active_id: str, focus_id: str = "") -> dict:
     return {
         "items": [{"id": i["id"], "name": i["name"], "base_url": i["base_url"],
                    "api_key": mask_key(i["api_key"]), "has_key": bool(i["api_key"]),
-                   "model": i["model"], "active": i["id"] == active_id} for i in items],
+                   "model": i["model"], "no_proxy": i["no_proxy"],
+                   "active": i["id"] == active_id} for i in items],
         "active_id": active_id,
         "focus_id": focus_id,
         "total": len(items),
@@ -143,7 +190,8 @@ def save_llm_config(cfg: dict) -> dict:
         data = {"name": str(cfg.get("name") or "").strip() or "未命名配置",
                 "base_url": str(cfg.get("base_url") or "").strip().rstrip("/"),
                 "api_key": key,
-                "model": str(cfg.get("model") or "").strip()}
+                "model": str(cfg.get("model") or "").strip(),
+                "no_proxy": bool(cfg.get("no_proxy"))}
         if cur is None:
             cur = _norm(data)
             items.append(cur)
@@ -213,31 +261,63 @@ def set_llm_config(cfg: dict):
 def test_llm_config(cfg: dict) -> tuple[bool, str]:
     """用给定配置发一条最小请求验证连通性。"""
     try:
-        resp = requests.post(
+        resp = _post(
             f"{cfg['base_url'].rstrip('/')}/chat/completions",
             headers={"Authorization": f"Bearer {cfg['api_key']}"},
-            json={"model": cfg["model"],
-                  "messages": [{"role": "user", "content": "hi"}],
-                  "max_tokens": 5},
-            timeout=20)
+            payload={"model": cfg["model"],
+                     "messages": [{"role": "user", "content": "hi"}],
+                     "max_tokens": 5},
+            timeout=20,
+            no_proxy=bool(cfg.get("no_proxy")))
         if resp.status_code == 200:
             return True, "连接成功"
+        if _blocked_by_proxy(resp):
+            return False, (f"HTTP {resp.status_code}: {resp.text[:160]}\n"
+                           "这是本机代理网关的拦截页（直连重试也没通）。"
+                           "请在代理软件里把该域名设为直连，或勾选「不使用系统代理」。")
         return False, f"HTTP {resp.status_code}: {resp.text[:200]}"
     except Exception as e:
         return False, str(e)
+
+
+def list_models(cfg: dict) -> tuple[bool, str, list[str]]:
+    """从 {base_url}/models 拉取可用模型列表（OpenAI 兼容协议）。"""
+    base_url = (cfg.get("base_url") or "").rstrip("/")
+    api_key = cfg.get("api_key") or ""
+    if not base_url:
+        return False, "请先填写 BASE URL", []
+    if not api_key:
+        return False, "请先填写有效的 API Key", []
+    try:
+        resp = _get(f"{base_url}/models",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    timeout=20, no_proxy=bool(cfg.get("no_proxy")))
+        if resp.status_code != 200:
+            msg = f"HTTP {resp.status_code}: {resp.text[:200]}"
+            if _blocked_by_proxy(resp):
+                msg = (f"HTTP {resp.status_code}: {resp.text[:160]}\n"
+                       "这是本机代理网关的拦截页（直连重试也没通）。"
+                       "请在代理软件里把该域名设为直连，或勾选「不使用系统代理」。")
+            return False, msg, []
+        data = resp.json().get("data", [])
+        models = sorted(str(m.get("id", "")) for m in data if m.get("id"))
+        return True, f"获取到 {len(models)} 个模型", models
+    except Exception as e:
+        return False, str(e), []
 
 
 def _chat(prompt: str, system: str = "You are an English teaching expert.") -> str:
     cfg = get_llm_config()
     if not cfg["api_key"]:
         raise RuntimeError("LLM API Key 未配置，请在「设置 → 模型服务」中填写")
-    resp = requests.post(
+    resp = _post(
         f"{cfg['base_url'].rstrip('/')}/chat/completions",
         headers={"Authorization": f"Bearer {cfg['api_key']}"},
-        json={"model": cfg["model"], "temperature": 0.8,
-              "messages": [{"role": "system", "content": system},
-                           {"role": "user", "content": prompt}]},
-        timeout=60)
+        payload={"model": cfg["model"], "temperature": 0.8,
+                 "messages": [{"role": "system", "content": system},
+                              {"role": "user", "content": prompt}]},
+        timeout=60,
+        no_proxy=bool(cfg.get("no_proxy")))
     if resp.status_code != 200:
         raise RuntimeError(f"LLM 请求失败 HTTP {resp.status_code}: {resp.text[:200]}")
     return resp.json()["choices"][0]["message"]["content"]
@@ -250,15 +330,33 @@ def _extract_json(raw: str):
     return json.loads(m.group(0))
 
 
-def generate_sentences(difficulty: str, topic: str, count: int = 1) -> list[dict]:
+VARIATION_ANGLES = [
+    "Focus on a different everyday scenario (work / shopping / transport / study).",
+    "Change the subject and the scene completely.",
+    "Use a different verb tense (past / future / present perfect).",
+    "Add one concrete, memorable detail instead of a generic statement.",
+    "Shift to a different place or time of day.",
+]
+
+
+def generate_sentences(difficulty: str, topic: str, count: int = 1,
+                       avoid: list[str] | None = None, attempt: int = 0) -> list[dict]:
     from app.config import DIFFICULTIES
     desc = {d["code"]: d["desc"] for d in DIFFICULTIES}
     prompt = (
         f"Generate {count} distinct English sentences for listening practice.\n"
         f"Difficulty ({difficulty}): {desc.get(difficulty, 'natural everyday English')}.\n"
-        f"Topic: {topic}.\n"
-        "Return ONLY a JSON array like "
-        '[{"text":"...","translation":"中文翻译"}]. No other words.')
+        f"Topic: {topic}.\n")
+    if avoid:
+        listed = "\n".join(f"- {t}" for t in avoid[:12])
+        prompt += (
+            "The learner ALREADY has the sentences below. Do NOT repeat them and do NOT "
+            "just swap one word; use clearly different scenarios, subjects or tenses:\n"
+            f"{listed}\n")
+    if attempt:
+        prompt += f"Variation hint: {VARIATION_ANGLES[attempt % len(VARIATION_ANGLES)]}\n"
+    prompt += ("Return ONLY a JSON array like "
+               '[{"text":"...","translation":"中文翻译"}]. No other words.')
     return _extract_json(_chat(prompt))
 
 

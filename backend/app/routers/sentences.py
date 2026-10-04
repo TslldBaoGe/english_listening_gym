@@ -33,9 +33,15 @@ def generate(body: GenerateIn, db: Session = Depends(get_db)):
     remaining = max(1, min(body.count, 3))
     retries = 0
     dup_blocked = 0
-    while remaining > 0 and retries < 4:
+    # 把同难度同主题已有的句子作为「禁用清单」交给 LLM，避免它反复生成雷同句被去重拦掉
+    avoid = [s.text for s in db.scalars(
+        select(Sentence)
+        .where(Sentence.difficulty_code == body.difficulty, Sentence.topic == body.topic)
+        .order_by(Sentence.id.desc()).limit(20)).all()]
+    while remaining > 0 and retries < 6:
         try:
-            items = llm.generate_sentences(body.difficulty, body.topic, remaining)
+            items = llm.generate_sentences(body.difficulty, body.topic, remaining,
+                                           avoid=avoid, attempt=retries)
         except Exception as e:
             raise HTTPException(502, f"生成失败: {e}")
         for it in items:
@@ -45,6 +51,7 @@ def generate(body: GenerateIn, db: Session = Depends(get_db)):
             if _is_duplicate(text, db):
                 dup_blocked += 1
                 retries += 1
+                avoid.append(text)   # 这一轮已被否掉的句子，下一轮也让 LLM 避开
                 continue
             s = Sentence(text=text, translation=str(it.get("translation", "")),
                          difficulty_code=body.difficulty, topic=body.topic,
@@ -67,8 +74,10 @@ def generate(body: GenerateIn, db: Session = Depends(get_db)):
     if not results:
         if dup_blocked:
             raise HTTPException(
-                409, "生成的内容与知识库中已有句子过于相似（同义或换词模板句），"
-                     "已全部拦截。请更换主题或稍后重试。")
+                409, f"生成的内容与知识库中已有句子过于相似（同义或换词模板句），"
+                     f"已拦截 {dup_blocked} 句。该主题下句子可能已经比较全了 —— "
+                     "换个主题、换个难度，或先把主题描述写具体一点（如 daily life → morning routine）"
+                     "通常就能立刻生成成功。")
         raise HTTPException(502, "生成失败，请重试")
     return {"sentences": results}
 

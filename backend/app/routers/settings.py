@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-import requests
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.db.database import get_db
@@ -83,6 +82,7 @@ def _merged_llm_cfg(body: dict) -> dict:
         "base_url": (body.get("base_url") or saved["base_url"]).rstrip("/"),
         "api_key": api_key,
         "model": body.get("model") or saved["model"],
+        "no_proxy": bool(body.get("no_proxy", saved.get("no_proxy", False))),
     }
 
 
@@ -101,19 +101,5 @@ def llm_test(body: dict):
 def llm_models(body: dict):
     """从 {base_url}/models 拉取可用模型列表（OpenAI 兼容协议）。"""
     cfg = _merged_llm_cfg(body)
-    base_url, api_key = cfg["base_url"], cfg["api_key"]
-    if not base_url:
-        return {"ok": False, "msg": "请先填写 BASE URL", "models": []}
-    if not api_key:
-        return {"ok": False, "msg": "请先填写有效的 API Key", "models": []}
-    try:
-        resp = requests.get(f"{base_url}/models",
-                            headers={"Authorization": f"Bearer {api_key}"}, timeout=20)
-        if resp.status_code != 200:
-            return {"ok": False,
-                    "msg": f"HTTP {resp.status_code}: {resp.text[:200]}", "models": []}
-        data = resp.json().get("data", [])
-        models = sorted(str(m.get("id", "")) for m in data if m.get("id"))
-        return {"ok": True, "msg": f"获取到 {len(models)} 个模型", "models": models}
-    except Exception as e:
-        return {"ok": False, "msg": str(e), "models": []}
+    ok, msg, models = llm.list_models(cfg)
+    return {"ok": ok, "msg": msg, "models": models}

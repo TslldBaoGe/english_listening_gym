@@ -14,6 +14,7 @@
             <div class="cfg-name">
               {{ c.name }}
               <el-tag v-if="c.id === activeId" size="small" type="primary" effect="dark">当前使用</el-tag>
+              <el-tag v-if="c.no_proxy" size="small" type="info" effect="plain">直连</el-tag>
             </div>
             <div class="cfg-sub mono">{{ c.model || '未填模型' }} · {{ c.base_url || '未填 Base URL' }}</div>
           </div>
@@ -57,6 +58,10 @@
             <el-button plain :loading="fetchingModels" style="color:var(--accent-2);border-color:var(--accent-2)"
                        @click="fetchModels">获取模型</el-button>
           </div>
+        </el-form-item>
+        <el-form-item label="网络">
+          <el-checkbox v-model="llm.no_proxy">不使用系统代理（直连）</el-checkbox>
+          <div class="cfg-hint">开着代理软件时，有些中转会拒绝代理出口 IP 并返回 403 拦截页，勾上这个可绕过；被拦截时程序也会自动直连重试一次。</div>
         </el-form-item>
         <el-form-item>
           <el-button class="glow-btn" type="primary" plain :loading="saving" @click="saveLlm">
@@ -117,7 +122,8 @@ const providers = ref({})
 const configs = ref([])
 const activeId = ref('')
 const form = reactive({ difficulty: 'L1', topic: 'daily life', voice: 'aria', rate: 1.0 })
-const llm = reactive({ id: '', name: '', provider: 'custom', base_url: '', api_key: '', model: '' })
+const llm = reactive({ id: '', name: '', provider: 'custom', base_url: '', api_key: '',
+                       model: '', no_proxy: false })
 const saving = ref(false)
 const testing = ref(false)
 const testMsg = ref('')
@@ -142,14 +148,15 @@ async function loadConfigs() {
 
 function resetForm() {
   Object.assign(llm, { id: '', name: '', provider: 'custom',
-                       base_url: '', api_key: '', model: '' })
+                       base_url: '', api_key: '', model: '', no_proxy: false })
   modelList.value = []
   testMsg.value = ''
 }
 
 function editConfig(c) {
   Object.assign(llm, { id: c.id, name: c.name, provider: 'custom',
-                       base_url: c.base_url, api_key: c.api_key, model: c.model })
+                       base_url: c.base_url, api_key: c.api_key, model: c.model,
+                       no_proxy: !!c.no_proxy })
   modelList.value = []   // 换配置后旧模型列表失效
   testMsg.value = ''
 }
@@ -161,7 +168,8 @@ async function saveLlm() {
   try {
     const { data } = await api.post('/settings/llm/configs', {
       id: llm.id || undefined, name: llm.name, base_url: llm.base_url,
-      api_key: llm.api_key, model: llm.model, make_active: true,
+      api_key: llm.api_key, model: llm.model, no_proxy: llm.no_proxy,
+      make_active: true,
     })
     configs.value = data.items
     activeId.value = data.active_id
@@ -250,6 +258,7 @@ async function saveDefaults() {
 }
 .cfg-ops { display: flex; gap: 6px; flex-shrink: 0; }
 .cfg-empty { color: var(--text-dim); font-size: 13px; padding: 6px 0 0; }
+.cfg-hint { color: var(--text-dim); font-size: 12px; line-height: 1.6; margin-top: 2px; }
 @media (max-width: 720px) {
   .cfg-row { flex-direction: column; align-items: stretch; }
   .cfg-ops { justify-content: flex-end; }
