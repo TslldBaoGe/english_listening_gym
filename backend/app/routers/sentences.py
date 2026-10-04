@@ -85,6 +85,7 @@ def generate(body: GenerateIn, db: Session = Depends(get_db)):
 @router.get("")
 def list_sentences(page: int = 1, size: int = 20, difficulty: str | None = None,
                    topic: str | None = None, keyword: str | None = None,
+                   mastered: bool | None = None,
                    db: Session = Depends(get_db)):
     q = select(Sentence).order_by(Sentence.id.desc())
     if difficulty:
@@ -93,6 +94,8 @@ def list_sentences(page: int = 1, size: int = 20, difficulty: str | None = None,
         q = q.where(Sentence.topic == topic)
     if keyword:
         q = q.where(Sentence.text.contains(keyword))
+    if mastered is not None:
+        q = q.where(Sentence.mastered == mastered)
     total = len(db.scalars(q).all())
     rows = db.scalars(q.offset((page - 1) * size).limit(size)).all()
     return {"total": total, "items": [

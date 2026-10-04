@@ -6,15 +6,23 @@
     <div class="card" style="margin-bottom:16px">
       <el-form inline>
         <el-form-item label="难度">
-          <el-select v-model="q.difficulty" clearable placeholder="不限" style="width:140px">
+          <el-select v-model="q.difficulty" clearable placeholder="不限" style="width:140px"
+                     @change="search">
             <el-option v-for="d in difficulties" :key="d.code" :label="d.code" :value="d.code" />
           </el-select>
         </el-form-item>
+        <el-form-item label="掌握情况">
+          <el-select v-model="q.mastered" clearable placeholder="不限" style="width:130px"
+                     @change="search">
+            <el-option label="已掌握" :value="true" />
+            <el-option label="未掌握" :value="false" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="关键词">
-          <el-input v-model="q.keyword" placeholder="搜索英文" style="width:200px" @keyup.enter="load" />
+          <el-input v-model="q.keyword" placeholder="搜索英文" style="width:200px" @keyup.enter="search" />
         </el-form-item>
         <el-form-item>
-          <el-button class="glow-btn" plain @click="load">搜索</el-button>
+          <el-button class="glow-btn" plain @click="search">搜索</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -50,21 +58,40 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from '../utils/message'
 import api from '../api'
 import AudioPlayer from '../components/AudioPlayer.vue'
+import { useViewState } from '../composables/useViewState'
 
 const difficulties = ref([])
 const items = ref([])
 const total = ref(0)
-const q = reactive({ page: 1, size: 20, difficulty: null, keyword: '' })
+const q = reactive({ page: 1, size: 20, difficulty: null, keyword: '', mastered: '' })
+
+// 筛选条件也记住：切菜单/刷新后回来还是刚才的筛选和页码
+const viewState = useViewState('el-library-query-v1',
+  () => ({ ...q }),
+  (saved) => { Object.assign(q, saved) })
 
 onMounted(async () => {
   difficulties.value = (await api.meta()).data.difficulties
+  viewState.restore()
   load()
 })
+
+/** 换筛选条件时回到第 1 页，避免停在空页上 */
+function search() {
+  q.page = 1
+  load()
+}
+
+/** 「不限」时把参数去掉（clearable 清空后可能是 '' 或 undefined） */
+function masteredParam() {
+  return (q.mastered === true || q.mastered === false) ? q.mastered : undefined
+}
 
 async function load() {
   const { data } = await api.listSentences({
     page: q.page, size: q.size,
-    difficulty: q.difficulty || undefined, keyword: q.keyword || undefined })
+    difficulty: q.difficulty || undefined, keyword: q.keyword || undefined,
+    mastered: masteredParam() })
   items.value = data.items
   total.value = data.total
 }
@@ -80,5 +107,7 @@ async function setMastered(it, mastered) {
   await api.setMastered(it.id, mastered)
   it.mastered = mastered
   ElMessage.success(mastered ? '已标记为掌握，测验不再抽到它' : '已重新加入测验')
+  // 正在按掌握情况筛选时重新拉一次，行会随之移出/移入列表
+  if (masteredParam() !== undefined) load()
 }
 </script>
