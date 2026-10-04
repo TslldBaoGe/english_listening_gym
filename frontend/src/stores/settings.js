@@ -15,5 +15,11 @@ export const useSettingsStore = defineStore('settings', {
       const { data } = await api.putSettings(patch)
       Object.assign(this, data, { rate: Number(data.rate) })
     },
+    /** 把用过的主题记进主题列表（01 练习页临时输入的主题也会进下拉框） */
+    async rememberTopic(name) {
+      const t = String(name || '').trim()
+      if (!t || (this.topics || []).includes(t)) return
+      await this.save({ topics: [...(this.topics || []), t] })
+    },
   },
 })

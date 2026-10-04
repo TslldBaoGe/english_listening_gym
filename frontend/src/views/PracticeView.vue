@@ -13,7 +13,10 @@
           </el-select>
         </el-form-item>
         <el-form-item label="主题">
-          <el-input v-model="form.topic" placeholder="如 travel / campus / tech" style="width:200px" />
+          <el-select v-model="form.topic" filterable allow-create default-first-option
+                     style="width:220px" placeholder="选一个，或直接输入新主题">
+            <el-option v-for="t in topicOptions" :key="t" :label="t" :value="t" />
+          </el-select>
         </el-form-item>
         <el-form-item label="数量">
           <el-input-number v-model="form.count" :min="1" :max="3" />
@@ -32,6 +35,10 @@
           <el-button text style="color:var(--text-dim)" @click="clearAll">清空列表</el-button>
         </el-form-item>
       </el-form>
+      <div class="hint" style="margin-top:-6px">
+        难度 / 主题 / 声音 / 语速 取 05 设置里的默认值；在这里改了只影响本次生成，
+        临时输入的新主题会自动记进主题下拉框。
+      </div>
     </div>
 
     <el-empty v-if="!items.length && !generating" description="还没有句子，先生成一批吧" />
@@ -54,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from '../utils/message'
 import api from '../api'
 import AudioPlayer from '../components/AudioPlayer.vue'
@@ -68,11 +75,12 @@ const items = ref([])
 const revealed = reactive({})
 const generating = ref(false)
 
-// 切菜单 / 刷新后，已经生成的句子和显隐状态都还在
+// 只记住「已生成的句子」和数量：难度/主题/声音/语速 一律用 05 设置里的默认值，
+// 这样在设置页改了默认主题，回到这里立刻生效
 const viewState = useViewState('el-practice-state-v1',
-  () => ({ form: { ...form }, items: items.value, revealed: { ...revealed } }),
+  () => ({ count: form.count, items: items.value, revealed: { ...revealed } }),
   (saved) => {
-    Object.assign(form, saved.form || {})
+    if (saved.count) form.count = saved.count
     if (Array.isArray(saved.items)) items.value = saved.items
     Object.assign(revealed, saved.revealed || {})
   })
@@ -92,9 +100,18 @@ function clearAll() {
   ElMessage.success('列表已清空（知识库里的句子不受影响）')
 }
 
+// 主题下拉：和 05 设置共用同一份列表；当前值不在列表里也要能显示
+const topicOptions = computed(() => {
+  const list = [...(store.topics || [])]
+  if (form.topic && !list.includes(form.topic)) list.unshift(form.topic)
+  return list
+})
+
 async function generate() {
   generating.value = true
   try {
+    // 临时输入的新主题顺手记进列表（失败不影响生成）
+    try { await store.rememberTopic(form.topic) } catch (e) { /* 忽略 */ }
     const { data } = await api.generate(form)
     items.value = [...data.sentences, ...items.value]
     data.sentences.forEach(s => (revealed[s.id] = false))
