@@ -6,20 +6,27 @@
     <div class="card" style="margin-bottom:16px">
       <el-form inline>
         <el-form-item label="难度">
-          <el-select v-model="q.difficulty" clearable placeholder="不限" style="width:140px"
+          <el-select v-model="q.difficulty" clearable placeholder="不限" style="width:120px"
                      @change="search">
             <el-option v-for="d in difficulties" :key="d.code" :label="d.code" :value="d.code" />
           </el-select>
         </el-form-item>
+        <el-form-item label="主题">
+          <el-select v-model="q.topic" clearable filterable placeholder="不限"
+                     style="width:150px" @change="search">
+            <el-option v-for="t in topicOptions" :key="t.topic"
+                       :label="`${t.topic}（${t.count}）`" :value="t.topic" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="掌握情况">
-          <el-select v-model="q.mastered" clearable placeholder="不限" style="width:130px"
+          <el-select v-model="q.mastered" clearable placeholder="不限" style="width:110px"
                      @change="search">
             <el-option label="已掌握" :value="true" />
             <el-option label="未掌握" :value="false" />
           </el-select>
         </el-form-item>
         <el-form-item label="关键词">
-          <el-input v-model="q.keyword" placeholder="搜索英文" style="width:200px" @keyup.enter="search" />
+          <el-input v-model="q.keyword" placeholder="搜索英文" style="width:180px" @keyup.enter="search" />
         </el-form-item>
         <el-form-item>
           <el-button class="glow-btn" plain @click="search">搜索</el-button>
@@ -54,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from '../utils/message'
 import api from '../api'
 import AudioPlayer from '../components/AudioPlayer.vue'
@@ -63,7 +70,16 @@ import { useViewState } from '../composables/useViewState'
 const difficulties = ref([])
 const items = ref([])
 const total = ref(0)
-const q = reactive({ page: 1, size: 20, difficulty: null, keyword: '', mastered: '' })
+const topicList = ref([])      // 知识库里实际有的主题 + 句数
+const q = reactive({ page: 1, size: 20, difficulty: null, topic: null,
+                     keyword: '', mastered: '' })
+
+// 主题下拉：用知识库里真实存在的主题（都带句数）；当前筛选项若不在其中也补上
+const topicOptions = computed(() => {
+  const list = [...topicList.value]
+  if (q.topic && !list.some(t => t.topic === q.topic)) list.unshift({ topic: q.topic, count: 0 })
+  return list
+})
 
 // 筛选条件也记住：切菜单/刷新后回来还是刚才的筛选和页码
 const viewState = useViewState('el-library-query-v1',
@@ -88,12 +104,16 @@ function masteredParam() {
 }
 
 async function load() {
-  const { data } = await api.listSentences({
-    page: q.page, size: q.size,
-    difficulty: q.difficulty || undefined, keyword: q.keyword || undefined,
-    mastered: masteredParam() })
+  const [{ data }, topics] = await Promise.all([
+    api.listSentences({
+      page: q.page, size: q.size,
+      difficulty: q.difficulty || undefined, topic: q.topic || undefined,
+      keyword: q.keyword || undefined, mastered: masteredParam() }),
+    api.sentenceTopics(),
+  ])
   items.value = data.items
   total.value = data.total
+  topicList.value = topics.data.items
 }
 
 async function del(id) {

@@ -121,6 +121,16 @@ def set_mastered(sentence_id: int, body: MasteredIn, db: Session = Depends(get_d
     return {"ok": True, "id": sentence_id, "mastered": bool(s.mastered)}
 
 
+@router.get("/topics")
+def list_topics(db: Session = Depends(get_db)):
+    """知识库里实际有的主题及句数，供 04 知识库的主题筛选下拉使用。"""
+    rows = db.execute(
+        select(Sentence.topic, func.count(Sentence.id))
+        .group_by(Sentence.topic)
+        .order_by(func.count(Sentence.id).desc(), Sentence.topic)).all()
+    return {"items": [{"topic": t or "general", "count": int(c or 0)} for t, c in rows]}
+
+
 @router.get("/random")
 def random_sentences(count: int = 1, difficulty: str | None = None,
                      include_mastered: bool = False,
