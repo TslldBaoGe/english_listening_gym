@@ -24,11 +24,17 @@
       <div v-for="it in items" :key="it.id" style="padding:12px 0;border-bottom:1px solid var(--border)">
         <div class="mono" style="color:var(--accent-2);font-size:12px">
           {{ it.difficulty }} · {{ it.topic }} · 错{{ it.wrong_count }}/共{{ it.total_count }}
+          <el-tag v-if="it.mastered" size="small" type="success" effect="dark"
+                  style="margin-left:6px">已掌握</el-tag>
         </div>
         <p class="mono" style="color:#e6edf3;margin:6px 0">{{ it.text }}</p>
         <p style="color:var(--text-dim);margin:4px 0">{{ it.translation }}</p>
-        <div style="display:flex;gap:10px">
+        <div style="display:flex;gap:10px;align-items:center">
           <AudioPlayer :sentence-id="it.id" :rate="1.0" />
+          <el-button v-if="it.mastered" text size="small" style="color:var(--accent)"
+                     @click="setMastered(it, false)">重新加入测验</el-button>
+          <el-button v-else text size="small" style="color:var(--text-dim)"
+                     @click="setMastered(it, true)">标记已掌握</el-button>
           <el-button text type="danger" size="small" @click="del(it.id)">删除</el-button>
         </div>
       </div>
@@ -68,5 +74,11 @@ async function del(id) {
   await api.deleteSentence(id)
   ElMessage.success('已删除')
   load()
+}
+
+async function setMastered(it, mastered) {
+  await api.setMastered(it.id, mastered)
+  it.mastered = mastered
+  ElMessage.success(mastered ? '已标记为掌握，测验不再抽到它' : '已重新加入测验')
 }
 </script>

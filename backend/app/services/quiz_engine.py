@@ -6,12 +6,19 @@ from app.db.models import Sentence, Attempt
 
 
 def pick_next(db: Session, difficulty: str | None = None, topic: str | None = None) -> Sentence | None:
-    q = select(Sentence)
-    if difficulty:
-        q = q.where(Sentence.difficulty_code == difficulty)
-    if topic:
-        q = q.where(Sentence.topic == topic)
-    rows = db.scalars(q).all()
+    def _q(skip_mastered: bool):
+        q = select(Sentence)
+        if difficulty:
+            q = q.where(Sentence.difficulty_code == difficulty)
+        if topic:
+            q = q.where(Sentence.topic == topic)
+        if skip_mastered:
+            q = q.where(Sentence.mastered == False)  # noqa: E712
+        return q
+
+    rows = db.scalars(_q(True)).all()
+    if not rows:                      # 全都会了：退回全部，别让测验卡住
+        rows = db.scalars(_q(False)).all()
     if not rows:
         return None
     now = datetime.now(timezone.utc)

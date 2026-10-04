@@ -99,19 +99,51 @@ def list_sentences(page: int = 1, size: int = 20, difficulty: str | None = None,
         {"id": s.id, "text": s.text, "translation": s.translation,
          "difficulty": s.difficulty_code, "topic": s.topic,
          "wrong_count": s.wrong_count, "total_count": s.total_count,
+         "mastered": bool(s.mastered),
          "audio_url": f"/api/audio/{s.id}"} for s in rows]}
+
+
+class MasteredIn(BaseModel):
+    mastered: bool = True
+
+
+@router.post("/{sentence_id}/mastered")
+def set_mastered(sentence_id: int, body: MasteredIn, db: Session = Depends(get_db)):
+    """标记/取消「已掌握」：已掌握的句子不会再被测验抽到。"""
+    s = db.get(Sentence, sentence_id)
+    if not s:
+        raise HTTPException(404, "句子不存在")
+    s.mastered = body.mastered
+    db.commit()
+    return {"ok": True, "id": sentence_id, "mastered": bool(s.mastered)}
 
 
 @router.get("/random")
 def random_sentences(count: int = 1, difficulty: str | None = None,
+                     include_mastered: bool = False,
                      db: Session = Depends(get_db)):
-    """测验用：从知识库随机抽句（不生成干扰项、不调 LLM）。"""
+    """测验用：从知识库随机抽句（默认跳过已答对的）。"""
     q = select(Sentence).order_by(func.random())
     if difficulty:
         q = q.where(Sentence.difficulty_code == difficulty)
+    if not include_mastered:
+        q = q.where(Sentence.mastered == False)  # noqa: E712
     rows = db.scalars(q.limit(max(1, min(count, 5)))).all()
     if not rows:
-        raise HTTPException(404, "知识库为空，请先生成句子")
+        def _count(extra=None) -> int:
+            cq = select(func.count(Sentence.id))
+            if difficulty:
+                cq = cq.where(Sentence.difficulty_code == difficulty)
+            if extra is not None:
+                cq = cq.where(extra)
+            return db.scalar(cq) or 0
+
+        total, done = _count(), _count(Sentence.mastered == True)  # noqa: E712
+        if total and done >= total and not include_mastered:
+            raise HTTPException(
+                404, f"这 {total} 句都已经答对了（已掌握）。想再练一遍就勾上"
+                     "「包含已掌握的」，或者到 04 知识库点「重新加入测验」。")
+        raise HTTPException(404, "知识库为空（或该难度下没有句子），请先生成句子")
     return {"sentences": [
         {"id": s.id, "text": s.text, "translation": s.translation,
          "difficulty": s.difficulty_code, "topic": s.topic,

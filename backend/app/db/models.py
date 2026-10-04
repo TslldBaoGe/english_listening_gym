@@ -30,6 +30,8 @@ class Sentence(Base):
     has_audio: Mapped[bool] = mapped_column(Boolean, default=False)
     wrong_count: Mapped[int] = mapped_column(Integer, default=0)
     total_count: Mapped[int] = mapped_column(Integer, default=0)
+    # 听写/跟读答对后置 1：测验抽题时跳过，不再出现
+    mastered: Mapped[bool] = mapped_column(Boolean, default=False)
     last_reviewed_at: Mapped[datetime | None] = mapped_column(TIMESTAMP, nullable=True)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, default=utcnow)
 

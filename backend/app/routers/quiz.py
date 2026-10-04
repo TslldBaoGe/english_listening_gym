@@ -9,6 +9,7 @@ from app.db.database import get_db
 from app.db.models import Sentence
 from app.services import llm
 from app.services import quiz_engine
+from app.services import answer_check
 from app.services import distractors as local_distractors
 from app.services.text_utils import normalize
 from app.config import QUIZ_SESSION_TTL
@@ -102,3 +103,27 @@ def submit(body: SubmitIn, db: Session = Depends(get_db)):
     quiz_engine.record_attempt(db, s, correct, body.chosen_text)
     return {"correct": correct, "original": s.text, "translation": s.translation,
             "wrong_count": s.wrong_count, "total_count": s.total_count}
+
+
+class CheckIn(BaseModel):
+    sentence_id: int
+    text: str
+
+
+@router.post("/check")
+def check(body: CheckIn, db: Session = Depends(get_db)):
+    """听写作答判定：比对用户输入的句子与原文。
+
+    完全正确（忽略大小写与标点）→ 标记「已掌握」，以后抽题不再出现。
+    """
+    s = db.get(Sentence, body.sentence_id)
+    if not s:
+        raise HTTPException(404, "句子不存在")
+    res = answer_check.check(s.text, body.text)
+    quiz_engine.record_attempt(db, s, res["correct"], body.text)
+    if res["correct"] and not s.mastered:
+        s.mastered = True
+        db.commit()
+    return {**res, "id": s.id, "translation": s.translation,
+            "wrong_count": s.wrong_count, "total_count": s.total_count,
+            "mastered": bool(s.mastered)}

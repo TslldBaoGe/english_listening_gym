@@ -17,8 +17,14 @@ for r in (sentences.router, quiz.router, audio.router, stats.router, settings.ro
 @app.on_event("startup")
 def init_db():
     Base.metadata.create_all(engine)
+    from sqlalchemy import text
     from app.db.database import SessionLocal
     from app.db.models import Difficulty
+    # 轻量迁移：给老库补上后加的列（SQLite 的 create_all 不会改已有表结构）
+    with engine.begin() as conn:
+        cols = [r[1] for r in conn.execute(text("PRAGMA table_info(sentences)"))]
+        if "mastered" not in cols:
+            conn.execute(text("ALTER TABLE sentences ADD COLUMN mastered BOOLEAN DEFAULT 0"))
     db = SessionLocal()
     try:
         for d in DIFFICULTIES:
