@@ -87,7 +87,15 @@
           </el-select>
         </el-form-item>
         <el-form-item label="默认主题">
-          <el-input v-model="form.topic" />
+          <div style="display:flex;gap:8px;width:100%">
+            <el-select v-model="form.topic" filterable style="flex:1" placeholder="下拉选择一个主题">
+              <el-option v-for="t in topicOptions" :key="t" :label="t" :value="t" />
+            </el-select>
+            <el-button plain style="color:var(--accent);border-color:var(--accent)"
+                       @click="addTopic">＋ 新增</el-button>
+            <el-button v-if="canDeleteTopic" plain type="danger" @click="removeTopic">删除</el-button>
+          </div>
+          <div class="cfg-hint">下拉里选中哪个，练习页默认就用哪个；主题可以自己新增、删除。</div>
         </el-form-item>
         <el-form-item label="默认声音">
           <el-radio-group v-model="form.voice">
@@ -110,7 +118,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from '../utils/message'
 import api from '../api'
 import { useSettingsStore } from '../stores/settings'
@@ -285,9 +293,55 @@ async function fetchModels() {
 }
 
 async function saveDefaults() {
-  await api.putSettings(form)
-  await store.load()
+  // 用 store.save 而不是裸 PUT：保存后 store 会同步刷新（load 有 loaded 短路，不会重新拉）
+  await store.save(form)
   ElMessage.success('已保存')
+}
+
+// ── 主题下拉框：可新增、可删除 ──────────────────────────────
+const topicOptions = computed(() => {
+  const list = [...(store.topics || [])]
+  if (form.topic && !list.includes(form.topic)) list.unshift(form.topic)  // 旧值不在列表里也要能显示
+  return list
+})
+const canDeleteTopic = computed(() => (store.topics || []).includes(form.topic))
+
+/** 主题列表一改就落库（页面上的「保存」按钮仍只管默认参数） */
+async function saveTopics(list, patch = {}) {
+  await store.save({ topics: list, ...patch })
+}
+
+async function addTopic() {
+  let value = ''
+  try {
+    const { value: input } = await ElMessageBox.prompt(
+      '新主题名称（英文更贴合提示词，例如 job interview）', '新增主题',
+      { confirmButtonText: '新增', cancelButtonText: '取消', inputPlaceholder: 'job interview' })
+    value = (input || '').trim()
+  } catch { return }   // 取消
+  if (!value) return ElMessage.warning('主题名不能为空')
+  if ((store.topics || []).includes(value)) {
+    form.topic = value
+    return ElMessage.info('这个主题已经有了，已帮你选中')
+  }
+  await saveTopics([...(store.topics || []), value])
+  form.topic = value
+  ElMessage.success(`已新增主题「${value}」`)
+}
+
+async function removeTopic() {
+  const name = form.topic
+  if (!(store.topics || []).includes(name)) return
+  if (store.topics.length <= 1) return ElMessage.warning('至少要留一个主题')
+  try {
+    await ElMessageBox.confirm(`确定删除主题「${name}」？`, '删除主题',
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' })
+  } catch { return }   // 取消
+  const left = store.topics.filter(t => t !== name)
+  // 删掉的正好是当前默认主题，就顺手把默认主题改成剩下的第一个
+  await saveTopics(left, name === store.topic ? { topic: left[0] } : {})
+  form.topic = store.topic || left[0]
+  ElMessage.success(`已删除主题「${name}」`)
 }
 </script>
 

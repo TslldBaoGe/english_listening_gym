@@ -2,7 +2,8 @@ import { defineStore } from 'pinia'
 import api from '../api'
 
 export const useSettingsStore = defineStore('settings', {
-  state: () => ({ difficulty: 'L1', topic: 'daily life', voice: 'aria', rate: 1.0, loaded: false }),
+  state: () => ({ difficulty: 'L1', topic: 'daily life', voice: 'aria', rate: 1.0,
+                  topics: [], loaded: false }),
   actions: {
     async load() {
       if (this.loaded) return

@@ -1,19 +1,50 @@
+import json
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.db.database import get_db
-from app.db.models import Setting
+from app.db.models import Setting, Sentence
 from app.services import llm
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
 DEFAULTS = {"difficulty": "L1", "topic": "daily life", "voice": "aria", "rate": "1.0"}
 
+TOPICS_KEY = "topics"           # 主题候选列表（JSON 数组），设置页下拉框用
+DEFAULT_TOPICS = ["daily life", "travel", "campus", "work", "food",
+                  "shopping", "health", "tech"]
+
+
+def _rows(db: Session) -> dict:
+    return {r.key: r.value for r in db.scalars(select(Setting)).all()}
+
+
+def _topics(db: Session) -> list[str]:
+    """读主题列表；还没设置过就给出默认几个 + 知识库里已经用过的主题。"""
+    raw = _rows(db).get(TOPICS_KEY)
+    if raw:
+        try:
+            saved = [str(t).strip() for t in json.loads(raw)]
+            saved = [t for t in saved if t]
+            if saved:
+                return saved
+        except Exception:
+            pass
+    used = {str(t).strip() for t in db.scalars(select(Sentence.topic).distinct()).all()
+            if t and str(t).strip()}
+    out: list[str] = []
+    for t in DEFAULT_TOPICS + sorted(used):
+        if t not in out:
+            out.append(t)
+    return out
+
 
 def _all_settings(db: Session) -> dict:
-    rows = {r.key: r.value for r in db.scalars(select(Setting)).all()}
+    rows = _rows(db)
     out = {**DEFAULTS, **rows}
     out["rate"] = float(out.get("rate") or 1.0)
+    out["topics"] = _topics(db)
     return out
 
 
@@ -33,6 +64,14 @@ def put_settings(body: dict, db: Session = Depends(get_db)):
             if k == "llm_api_key" and (not v or str(v).endswith("***")):
                 continue  # 脱敏值不覆盖真实 key
             llm.set_llm_config({k: v})
+        elif k == TOPICS_KEY:
+            items = [str(t).strip() for t in (v or []) if str(t).strip()]
+            row = db.get(Setting, k)
+            value = json.dumps(items, ensure_ascii=False)
+            if row:
+                row.value = value
+            else:
+                db.add(Setting(key=k, value=value))
         elif k in DEFAULTS:
             row = db.get(Setting, k)
             if row:
