@@ -22,7 +22,7 @@ def _all_settings(db: Session) -> dict:
 def get_settings(db: Session = Depends(get_db)):
     out = _all_settings(db)
     if out.get("llm_api_key"):
-        out["llm_api_key"] = out["llm_api_key"][:6] + "***"  # 脱敏返回
+        out["llm_api_key"] = llm.mask_key(out["llm_api_key"])  # 脱敏返回
     return out
 
 
@@ -49,9 +49,33 @@ def llm_providers():
     return llm.PROVIDERS
 
 
+@router.get("/llm/configs")
+def llm_configs():
+    """模型配置列表（可命名、可删除，密钥脱敏返回）。"""
+    return llm.list_llm_configs()
+
+
+@router.post("/llm/configs")
+def llm_config_save(body: dict):
+    """新增或修改一条模型配置（body 带 id 即修改）。"""
+    return llm.save_llm_config(body)
+
+
+@router.delete("/llm/configs/{cid}")
+def llm_config_delete(cid: str):
+    return llm.delete_llm_config(cid)
+
+
+@router.post("/llm/configs/{cid}/activate")
+def llm_config_activate(cid: str):
+    """把某条配置设为当前使用。"""
+    return llm.activate_llm_config(cid)
+
+
 def _merged_llm_cfg(body: dict) -> dict:
     """合并前端提交值与已保存配置：脱敏/空值回退到数据库保存的真实值。"""
-    saved = llm.get_llm_config()
+    cid = str(body.get("id") or "").strip()
+    saved = llm.get_config_by_id(cid) if cid else llm.get_llm_config()
     api_key = body.get("api_key") or ""
     if not api_key or api_key.endswith("***"):
         api_key = saved["api_key"]

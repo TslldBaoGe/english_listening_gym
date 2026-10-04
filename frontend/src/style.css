@@ -6,6 +6,8 @@
   --accent-2: #a855f7;
   --text: #c9d1d9;
   --text-dim: #8b949e;
+  /* 悬浮导航栏距页面顶部的距离：改这一个值即可整体上下移动菜单栏 */
+  --nav-gap: 20px;
 }
 
 html, body {
@@ -73,10 +75,10 @@ html, body {
 
 .navbar {
   position: sticky;
-  top: 72px;
+  top: var(--nav-gap);
   z-index: 100;
   max-width: 1112px;
-  margin: 72px auto 0;
+  margin: var(--nav-gap) auto 0;
   border-radius: 12px;
   background: rgba(10, 10, 15, 0.72);
   backdrop-filter: blur(14px);
@@ -222,6 +224,9 @@ html, body {
 
 /* 手机等窄屏：导航栏可横向滚动，避免菜单撑破页面 */
 @media (max-width: 720px) {
+  :root {
+    --nav-gap: 10px;
+  }
   .page {
     padding: 16px 12px 48px;
   }
@@ -229,10 +234,6 @@ html, body {
     gap: 8px;
     padding: 0 12px;
     height: 50px;
-  }
-  .navbar {
-    top: 44px;
-    margin-top: 44px;
   }
   .nav-logo-sub {
     display: none;
