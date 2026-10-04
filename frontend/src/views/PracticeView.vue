@@ -28,6 +28,9 @@
           <el-button class="glow-btn" type="primary" plain :loading="generating"
                      @click="generate">生成并朗读</el-button>
         </el-form-item>
+        <el-form-item>
+          <el-button text style="color:var(--text-dim)" @click="clearAll">清空列表</el-button>
+        </el-form-item>
       </el-form>
     </div>
 
@@ -56,6 +59,7 @@ import { ElMessage } from 'element-plus'
 import api from '../api'
 import AudioPlayer from '../components/AudioPlayer.vue'
 import { useSettingsStore } from '../stores/settings'
+import { useViewState } from '../composables/useViewState'
 
 const store = useSettingsStore()
 const difficulties = ref([])
@@ -64,12 +68,29 @@ const items = ref([])
 const revealed = reactive({})
 const generating = ref(false)
 
+// 切菜单 / 刷新后，已经生成的句子和显隐状态都还在
+const viewState = useViewState('el-practice-state-v1',
+  () => ({ form: { ...form }, items: items.value, revealed: { ...revealed } }),
+  (saved) => {
+    Object.assign(form, saved.form || {})
+    if (Array.isArray(saved.items)) items.value = saved.items
+    Object.assign(revealed, saved.revealed || {})
+  })
+
 onMounted(async () => {
   const { data } = await api.meta()
   difficulties.value = data.difficulties
   await store.load()
   Object.assign(form, { difficulty: store.difficulty, topic: store.topic, voice: store.voice })
+  viewState.restore()
 })
+
+function clearAll() {
+  items.value = []
+  Object.keys(revealed).forEach(k => delete revealed[k])
+  viewState.clear()
+  ElMessage.success('列表已清空（知识库里的句子不受影响）')
+}
 
 async function generate() {
   generating.value = true

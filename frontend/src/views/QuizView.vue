@@ -20,6 +20,9 @@
         <el-form-item>
           <el-checkbox v-model="form.includeMastered">包含已掌握的</el-checkbox>
         </el-form-item>
+        <el-form-item>
+          <el-button text style="color:var(--text-dim)" @click="clearAll">清空重来</el-button>
+        </el-form-item>
       </el-form>
       <div class="hint">
         玩法：点播放听句子 → 把你听到的句子打在下面的输入框里 → 回车提交。
@@ -97,6 +100,7 @@ import { ElMessage } from 'element-plus'
 import api from '../api'
 import AudioPlayer from '../components/AudioPlayer.vue'
 import { useSettingsStore } from '../stores/settings'
+import { useViewState } from '../composables/useViewState'
 
 const store = useSettingsStore()
 const difficulties = ref([])
@@ -108,10 +112,32 @@ const results = reactive({})   // sentence_id -> 判定结果
 const checking = ref(null)
 const loading = ref(false)
 
+// 切菜单 / 刷新后，抽到的句子、你打的内容、判定结果都还在
+const viewState = useViewState('el-quiz-state-v1',
+  () => ({ form: { ...form }, items: items.value, answers: { ...answers },
+           results: { ...results }, revealed: { ...revealed } }),
+  (saved) => {
+    Object.assign(form, saved.form || {})
+    if (Array.isArray(saved.items)) items.value = saved.items
+    Object.assign(answers, saved.answers || {})
+    Object.assign(results, saved.results || {})
+    Object.assign(revealed, saved.revealed || {})
+  })
+
 onMounted(async () => {
   difficulties.value = (await api.meta()).data.difficulties
   await store.load()
+  viewState.restore()
 })
+
+function clearAll() {
+  items.value = []
+  Object.keys(answers).forEach(k => delete answers[k])
+  Object.keys(results).forEach(k => delete results[k])
+  Object.keys(revealed).forEach(k => delete revealed[k])
+  viewState.clear()
+  ElMessage.success('已清空，重新抽题吧')
+}
 
 // 从知识库随机抽 count 条（默认跳过已掌握的）
 async function draw() {
