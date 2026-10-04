@@ -7,74 +7,77 @@
     <div class="card" style="max-width:680px;margin-bottom:20px">
       <div class="section-tag">模型服务（OpenAI 兼容 / v1/chat/completions）</div>
 
-      <!-- 已保存的模型配置：可命名、可切换、可删除 -->
-      <div v-if="configs.length" class="cfg-list">
-        <div v-for="c in configs" :key="c.id" class="cfg-row" :class="{ on: c.id === activeId }">
-          <div class="cfg-info">
-            <div class="cfg-name">
-              {{ c.name }}
-              <el-tag v-if="c.id === activeId" size="small" type="primary" effect="dark">当前使用</el-tag>
-              <el-tag v-if="c.no_proxy" size="small" type="info" effect="plain">直连</el-tag>
-            </div>
-            <div class="cfg-sub mono">{{ c.model || '未填模型' }} · {{ c.base_url || '未填 Base URL' }}</div>
-          </div>
-          <div class="cfg-ops">
-            <el-button size="small" plain @click="editConfig(c)">编辑</el-button>
-            <el-button v-if="c.id !== activeId" size="small" plain
-                       style="color:var(--accent);border-color:var(--accent)"
-                       @click="activateConfig(c)">设为当前</el-button>
-            <el-button size="small" plain type="danger" @click="removeConfig(c)">删除</el-button>
-          </div>
-        </div>
-      </div>
-      <div v-else class="cfg-empty mono">还没有配置，填下面的表单保存一条即可</div>
-
-      <el-form label-width="110px" style="margin-top:14px">
-        <el-form-item label="名称">
-          <el-input v-model="llm.name" class="mono" placeholder="自己起名，例如：我的中转 / 智谱GLM" />
-        </el-form-item>
-        <el-form-item label="类型">
-          <el-select v-model="llm.provider" style="width:100%">
-            <el-option v-for="(p, key) in providers" :key="key"
-              :label="p.label" :value="key" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="Base URL">
-          <el-input v-model="llm.base_url" class="mono"
-                    placeholder="https://.../v1" />
-        </el-form-item>
-        <el-form-item label="API Key">
-          <el-input v-model="llm.api_key" class="mono" show-password
-                    placeholder="sk-..." />
-        </el-form-item>
-        <el-form-item label="模型">
+      <!-- 模型配置：下拉框选择 + 新增 -->
+      <el-form label-width="110px">
+        <el-form-item label="模型配置">
           <div style="display:flex;gap:8px;width:100%">
-            <el-select v-if="modelList.length" v-model="llm.model" filterable allow-create
-                       class="mono" style="flex:1" placeholder="选择或输入模型">
-              <el-option v-for="m in modelList" :key="m" :label="m" :value="m" class="mono" />
+            <el-select v-model="pickedId" style="flex:1" placeholder="下拉选择一个配置"
+                       @change="onPick">
+              <el-option v-for="c in configs" :key="c.id" :value="c.id"
+                         :label="c.name + (c.id === activeId ? '　·　当前使用' : '')" />
             </el-select>
-            <el-input v-else v-model="llm.model" class="mono" style="flex:1"
-                      placeholder="glm-4-flash / gpt-4o-mini ... 或点击右侧获取" />
-            <el-button plain :loading="fetchingModels" style="color:var(--accent-2);border-color:var(--accent-2)"
-                       @click="fetchModels">获取模型</el-button>
+            <el-button plain style="color:var(--accent);border-color:var(--accent)"
+                       @click="newConfig">＋ 新增</el-button>
+            <el-button v-if="pickedId" plain type="danger" @click="removeConfig">删除</el-button>
           </div>
         </el-form-item>
-        <el-form-item label="网络">
-          <el-checkbox v-model="llm.no_proxy">不使用系统代理（直连）</el-checkbox>
-          <div class="cfg-hint">开着代理软件时，有些中转会拒绝代理出口 IP 并返回 403 拦截页，勾上这个可绕过；被拦截时程序也会自动直连重试一次。</div>
-        </el-form-item>
-        <el-form-item>
-          <el-button class="glow-btn" type="primary" plain :loading="saving" @click="saveLlm">
-            {{ llm.id ? '保存修改' : '新增配置' }}</el-button>
-          <el-button plain :loading="testing" style="color:var(--accent-2);border-color:var(--accent-2)"
-                     @click="testLlm">测试连接</el-button>
-          <el-button v-if="llm.id" plain @click="resetForm">取消编辑</el-button>
-          <span v-if="testMsg" :style="{color: testOk ? 'var(--accent)' : '#f56c6c', marginLeft:'10px', fontSize:'13px'}">
-            {{ testMsg }}</span>
+
+        <template v-if="editing">
+          <el-form-item label="名称">
+            <el-input v-model="llm.name" class="mono" placeholder="自己起名，例如：我的中转 / DeepSeek" />
+          </el-form-item>
+          <el-form-item label="类型">
+            <el-select v-model="llm.provider" style="width:100%">
+              <el-option v-for="(p, key) in providers" :key="key"
+                :label="p.label" :value="key" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="Base URL">
+            <el-input v-model="llm.base_url" class="mono" placeholder="https://.../v1" />
+          </el-form-item>
+          <el-form-item label="API Key">
+            <el-input v-model="llm.api_key" class="mono" show-password placeholder="sk-..." />
+          </el-form-item>
+          <el-form-item label="模型">
+            <div style="display:flex;gap:8px;width:100%">
+              <el-select v-if="modelList.length" v-model="llm.model" filterable allow-create
+                         class="mono" style="flex:1" placeholder="选择或输入模型">
+                <el-option v-for="m in modelList" :key="m" :label="m" :value="m" class="mono" />
+              </el-select>
+              <el-input v-else v-model="llm.model" class="mono" style="flex:1"
+                        placeholder="glm-4-flash / gpt-4o-mini ... 或点击右侧获取" />
+              <el-button plain :loading="fetchingModels" style="color:var(--accent-2);border-color:var(--accent-2)"
+                         @click="fetchModels">获取模型</el-button>
+            </div>
+          </el-form-item>
+          <el-form-item label="网络">
+            <el-checkbox v-model="llm.no_proxy">不使用系统代理（直连）</el-checkbox>
+            <div class="cfg-hint">开着代理软件时，有些中转会拒绝代理出口 IP 并返回 403 拦截页，勾上这个可绕过；被拦截时程序也会自动直连重试一次。</div>
+          </el-form-item>
+          <el-form-item>
+            <el-button class="glow-btn" type="primary" plain :loading="saving" @click="saveLlm">
+              {{ llm.id ? '保存修改' : '新增配置' }}</el-button>
+            <el-button plain :loading="testing" style="color:var(--accent-2);border-color:var(--accent-2)"
+                       @click="testLlm">测试连接</el-button>
+            <el-button plain @click="cancelEdit">取消</el-button>
+            <span v-if="testMsg" :style="{color: testOk ? 'var(--accent)' : '#f56c6c', marginLeft:'10px', fontSize:'13px'}">
+              {{ testMsg }}</span>
+          </el-form-item>
+        </template>
+
+        <el-form-item v-else>
+          <div class="cfg-hint">
+            还没有模型配置，点上方「＋ 新增」自己建一条（名称、Base URL、API Key、模型名全部由你填）。
+            <template v-if="legacy.has_key">
+              <br />检测到旧的单条配置（{{ legacy.model || '未填模型' }}），
+              <a class="link" @click="importLegacy">点这里导入</a> 就能变成一条可管理的配置。
+            </template>
+          </div>
         </el-form-item>
       </el-form>
+
       <el-alert type="info" :closable="false" title="配置保存在本地数据库，仅本机使用"
-                description="类型只保留「自定义（OpenAI 兼容）」：Base URL、API Key、模型名都由你填写；可保存多条、随时切换或删除。" />
+                description="下拉框选中哪条，练习/测验就用哪条；类型固定为「自定义（OpenAI 兼容）」，可随时新增、改名或删除。" />
     </div>
 
     <!-- 练习默认参数 -->
@@ -121,6 +124,9 @@ const difficulties = ref([])
 const providers = ref({})
 const configs = ref([])
 const activeId = ref('')
+const pickedId = ref('')          // 下拉框选中的配置 id
+const editing = ref(false)        // 是否展开编辑表单
+const legacy = ref({})            // 旧的单条配置（列表为空时可一键导入）
 const form = reactive({ difficulty: 'L1', topic: 'daily life', voice: 'aria', rate: 1.0 })
 const llm = reactive({ id: '', name: '', provider: 'custom', base_url: '', api_key: '',
                        model: '', no_proxy: false })
@@ -140,10 +146,40 @@ onMounted(async () => {
   await loadConfigs()
 })
 
-async function loadConfigs() {
+async function loadConfigs(pickAfter = true) {
   const { data } = await api.get('/settings/llm/configs')
   configs.value = data.items
   activeId.value = data.active_id
+  legacy.value = data.legacy || {}
+  if (pickAfter) pickCurrent()
+}
+
+/** 下拉框默认停在「当前使用」那条；一条都没有就收起表单 */
+function pickCurrent() {
+  if (!configs.value.length) {
+    pickedId.value = ''
+    editing.value = false
+    resetForm()
+    return
+  }
+  onPick(activeId.value || configs.value[0].id)
+}
+
+/** 下拉框选择：载入表单编辑，并且「选它就用它」 */
+function onPick(id) {
+  const c = configs.value.find(x => x.id === id)
+  if (!c) return
+  pickedId.value = id
+  editing.value = true
+  fill(c)
+  if (c.id !== activeId.value) activateConfig(c)
+}
+
+function fill(c) {
+  Object.assign(llm, { id: c.id, name: c.name, provider: 'custom', base_url: c.base_url,
+                       api_key: c.api_key, model: c.model, no_proxy: !!c.no_proxy })
+  modelList.value = []   // 换配置后旧模型列表失效
+  testMsg.value = ''
 }
 
 function resetForm() {
@@ -153,12 +189,26 @@ function resetForm() {
   testMsg.value = ''
 }
 
-function editConfig(c) {
-  Object.assign(llm, { id: c.id, name: c.name, provider: 'custom',
-                       base_url: c.base_url, api_key: c.api_key, model: c.model,
-                       no_proxy: !!c.no_proxy })
-  modelList.value = []   // 换配置后旧模型列表失效
-  testMsg.value = ''
+/** 新增：清空表单，保存时会创建一条新配置 */
+function newConfig() {
+  resetForm()
+  pickedId.value = ''
+  editing.value = true
+}
+
+/** 把旧的单条配置（Base URL / 模型 / 脱敏 key）填进新增表单，保存即成为可管理的配置 */
+function importLegacy() {
+  resetForm()
+  pickedId.value = ''
+  editing.value = true
+  llm.name = '我的配置'
+  llm.base_url = legacy.value.base_url || ''
+  llm.model = legacy.value.model || ''
+  llm.api_key = legacy.value.api_key || ''
+}
+
+function cancelEdit() {
+  pickCurrent()
 }
 
 async function saveLlm() {
@@ -173,8 +223,9 @@ async function saveLlm() {
     })
     configs.value = data.items
     activeId.value = data.active_id
+    legacy.value = data.legacy || {}
     const saved = data.items.find(i => i.id === data.focus_id)
-    if (saved) editConfig(saved)   // 回填脱敏后的 key，便于继续测试
+    if (saved) { pickedId.value = saved.id; editing.value = true; fill(saved) }
     ElMessage.success(`「${saved ? saved.name : llm.name}」已保存并设为当前使用`)
   } catch (e) {
     ElMessage.error(netErr(e, '保存失败'))
@@ -185,10 +236,11 @@ async function activateConfig(c) {
   const { data } = await api.post(`/settings/llm/configs/${c.id}/activate`)
   configs.value = data.items
   activeId.value = data.active_id
-  ElMessage.success(`已切换为「${c.name}」`)
 }
 
-async function removeConfig(c) {
+async function removeConfig() {
+  const c = configs.value.find(x => x.id === pickedId.value)
+  if (!c) return
   try {
     await ElMessageBox.confirm(`确定删除配置「${c.name}」？删除后无法恢复。`, '删除确认',
       { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' })
@@ -196,7 +248,9 @@ async function removeConfig(c) {
   const { data } = await api.delete(`/settings/llm/configs/${c.id}`)
   configs.value = data.items
   activeId.value = data.active_id
-  if (llm.id === c.id) resetForm()
+  legacy.value = data.legacy || {}
+  pickedId.value = ''
+  pickCurrent()
   ElMessage.success('已删除')
 }
 
@@ -242,25 +296,7 @@ async function saveDefaults() {
 </script>
 
 <style scoped>
-.cfg-list { display: flex; flex-direction: column; gap: 8px; }
-.cfg-row {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px; border-radius: 10px;
-  border: 1px solid var(--border); background: rgba(148, 163, 184, .04);
-  transition: border-color .2s, background .2s;
-}
-.cfg-row.on { border-color: rgba(56, 189, 248, .45); background: rgba(56, 189, 248, .07); }
-.cfg-info { flex: 1; min-width: 0; }
-.cfg-name { display: flex; align-items: center; gap: 8px; color: #e6edf3; font-size: 14px; }
-.cfg-sub {
-  margin-top: 2px; font-size: 12px; color: var(--text-dim);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.cfg-ops { display: flex; gap: 6px; flex-shrink: 0; }
-.cfg-empty { color: var(--text-dim); font-size: 13px; padding: 6px 0 0; }
-.cfg-hint { color: var(--text-dim); font-size: 12px; line-height: 1.6; margin-top: 2px; }
-@media (max-width: 720px) {
-  .cfg-row { flex-direction: column; align-items: stretch; }
-  .cfg-ops { justify-content: flex-end; }
-}
+.cfg-hint { color: var(--text-dim); font-size: 12px; line-height: 1.8; margin-top: 2px; }
+.link { color: var(--accent); cursor: pointer; text-decoration: underline; }
+.link:hover { color: #7dd3fc; }
 </style>

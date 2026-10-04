@@ -89,24 +89,18 @@ def _put(db, key: str, value):
 
 
 def _load_configs(db) -> list[dict]:
-    """读取配置列表；老版本的单条配置在首次访问时自动迁移成一条命名配置。"""
-    rows = _rows(db)
-    raw = rows.get(CONFIGS_KEY)
-    if raw:
-        try:
-            items = [i for i in json.loads(raw) if isinstance(i, dict)]
-            return [_norm(i) for i in items]
-        except Exception:
-            pass
-    legacy = {"base_url": rows.get("llm_base_url") or "",
-              "api_key": rows.get("llm_api_key") or "",
-              "model": rows.get("llm_model") or ""}
-    if any(legacy.values()):
-        item = _norm({"name": "默认配置", **legacy})
-        _save_configs(db, [item], item["id"])
-        db.commit()
-        return [item]
-    return []
+    """读取配置列表。
+
+    不再自动创建「默认配置」：列表为空就是空，全部由用户在设置页自己新增。
+    （练习/测验取用的 get_llm_config() 仍会回退到旧的单条 llm_* 配置，所以不会突然不能用。）
+    """
+    raw = _rows(db).get(CONFIGS_KEY)
+    if not raw:
+        return []
+    try:
+        return [_norm(i) for i in json.loads(raw) if isinstance(i, dict)]
+    except Exception:
+        return []
 
 
 def _sync_active(db, items: list[dict], active_id: str):
@@ -168,11 +162,18 @@ def list_llm_configs() -> dict:
     db = SessionLocal()
     try:
         items = _load_configs(db)
-        active = _rows(db).get(ACTIVE_KEY) or (items[0]["id"] if items else "")
-        if items and _rows(db).get(ACTIVE_KEY) != active:
+        rows = _rows(db)
+        active = rows.get(ACTIVE_KEY) or (items[0]["id"] if items else "")
+        if items and rows.get(ACTIVE_KEY) != active:
             _save_configs(db, items, active)
             db.commit()
-        return _payload(items, active)
+        out = _payload(items, active)
+        # 列表为空时，前端可据此提示「检测到旧的单条配置，可一键导入」
+        out["legacy"] = {"base_url": rows.get("llm_base_url") or "",
+                         "api_key": mask_key(rows.get("llm_api_key") or ""),
+                         "has_key": bool(rows.get("llm_api_key")),
+                         "model": rows.get("llm_model") or ""}
+        return out
     finally:
         db.close()
 
@@ -185,8 +186,9 @@ def save_llm_config(cfg: dict) -> dict:
         cid = str(cfg.get("id") or "").strip()
         cur = next((i for i in items if i["id"] == cid), None)
         key = str(cfg.get("api_key") or "")
-        if cur is not None and (not key or key.endswith("***")):
-            key = cur["api_key"]
+        if not key or key.endswith("***"):
+            # 脱敏值/空值不覆盖已保存的 key：优先本配置，其次旧的单条配置
+            key = cur["api_key"] if cur is not None else (_rows(db).get("llm_api_key") or "")
         data = {"name": str(cfg.get("name") or "").strip() or "未命名配置",
                 "base_url": str(cfg.get("base_url") or "").strip().rstrip("/"),
                 "api_key": key,
