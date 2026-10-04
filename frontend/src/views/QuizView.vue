@@ -53,30 +53,20 @@
         <p v-if="results[s.id].correct" style="color:var(--accent);margin:0 0 8px">
           ✓ 完全正确 —— 已标记「已掌握」，下次抽题不会再出现
         </p>
-        <p v-else style="color:#f56c6c;margin:0 0 8px">
-          ✗ 和原文有出入（相似度 {{ Math.round(results[s.id].similarity * 100) }}%），再听一遍改改看
-        </p>
-
-        <!-- 错在哪：只标你自己写的词，绝不显示原文 -->
-        <template v-if="!results[s.id].correct">
-          <p class="mono" style="margin:0 0 6px;line-height:1.9">
-            <span style="color:var(--text-dim)">你的输入：</span>
-            <span v-for="(g, i) in results[s.id].segments" :key="i"
-                  :style="{ color: g.status === 'ok' ? 'var(--accent)' : '#f56c6c' }">{{ g.v }} </span>
-          </p>
-          <p class="hint" style="margin:0">
-            <span style="color:#f56c6c">红色</span>标出来的词不对<template
-              v-if="results[s.id].missing.length">；另外少了 {{ results[s.id].missing.length }} 个词</template>。
-            <template v-if="!revealed[s.id]">（答案先不给你，自己再听一遍 🙂）</template>
-          </p>
-        </template>
+        <!-- 答错：不给任何提示（不显示原文、相似度、错词、少几个词），自己再听一遍 -->
+        <p v-else style="color:#f56c6c;margin:0 0 4px">✗ 不对，再听一遍试试</p>
 
         <!-- 原文/翻译：答对自动显示；答错要点「看答案」 -->
         <template v-if="results[s.id].correct || revealed[s.id]">
           <p class="mono" style="color:#e6edf3;margin:10px 0 0">原文：{{ results[s.id].expected }}</p>
           <p style="color:var(--text-dim);margin:4px 0 0">{{ results[s.id].translation }}</p>
           <template v-if="!results[s.id].correct">
-            <p v-if="results[s.id].missing.length" class="mono" style="color:#e6a23c;margin:6px 0 0">
+            <p class="mono" style="margin:6px 0 0;line-height:1.9">
+              <span style="color:var(--text-dim)">你的输入：</span>
+              <span v-for="(g, i) in results[s.id].segments" :key="i"
+                    :style="{ color: g.status === 'ok' ? 'var(--accent)' : '#f56c6c' }">{{ g.v }} </span>
+            </p>
+            <p v-if="results[s.id].missing.length" class="mono" style="color:#e6a23c;margin:4px 0 0">
               漏掉：{{ results[s.id].missing.join(' ') }}</p>
             <p v-if="wrongDetail(s.id)" class="mono" style="color:var(--text-dim);margin:4px 0 0">
               写错：{{ wrongDetail(s.id) }}</p>
