@@ -12,3 +12,6 @@ __pycache__/
 venv/
 .vscode/
 .idea/
+
+# 本机专用脚本(含个人仓库地址,不入库)
+push.bat

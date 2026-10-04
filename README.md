@@ -1,4 +1,4 @@
-# 英语听力训练营 (english-listening-gym)
+# 英语听力训练营 (english_listening_gym)
 
 AI 驱动的英语听力训练工具:用 LLM 生成场景化例句 → Edge-TTS 合成地道美音 → 听音选句测验 → 按掌握度加权复习。支持手机(PWA)和电脑网页同时使用。
 
