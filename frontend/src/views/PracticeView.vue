@@ -13,10 +13,14 @@
           </el-select>
         </el-form-item>
         <el-form-item label="主题">
-          <el-select v-model="form.topic" filterable allow-create default-first-option
-                     style="width:220px" placeholder="选一个，或直接输入新主题">
-            <el-option v-for="t in topicOptions" :key="t" :label="t" :value="t" />
-          </el-select>
+          <div style="display:flex;gap:8px">
+            <el-select v-model="form.topic" filterable style="width:180px"
+                       placeholder="下拉选择一个主题">
+              <el-option v-for="t in topicOptions" :key="t" :label="t" :value="t" />
+            </el-select>
+            <el-button plain style="color:var(--accent);border-color:var(--accent)"
+                       @click="addTopic">＋ 新增</el-button>
+          </div>
         </el-form-item>
         <el-form-item label="数量">
           <el-input-number v-model="form.count" :min="1" :max="3" />
@@ -36,8 +40,8 @@
         </el-form-item>
       </el-form>
       <div class="hint" style="margin-top:-6px">
-        难度 / 主题 / 声音 / 语速 取 05 设置里的默认值；在这里改了只影响本次生成，
-        临时输入的新主题会自动记进主题下拉框。
+        难度 / 主题 / 声音 / 语速 取 05 设置里的默认值；主题只能从下拉里选，
+        要加新主题点旁边的「＋ 新增」（主题列表与 05 设置共用）。
       </div>
     </div>
 
@@ -62,7 +66,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage } from '../utils/message'
+import { ElMessage, ElMessageBox } from '../utils/message'
 import api from '../api'
 import AudioPlayer from '../components/AudioPlayer.vue'
 import { useSettingsStore } from '../stores/settings'
@@ -107,10 +111,29 @@ const topicOptions = computed(() => {
   return list
 })
 
+/** 新增主题：和 05 设置走同一份数据，加完立刻选中 */
+async function addTopic() {
+  let value = ''
+  try {
+    const { value: input } = await ElMessageBox.prompt(
+      '新主题名称（英文更贴合提示词，例如 job interview）', '新增主题',
+      { confirmButtonText: '新增', cancelButtonText: '取消', inputPlaceholder: 'job interview' })
+    value = (input || '').trim()
+  } catch { return }   // 取消
+  if (!value) return ElMessage.warning('主题名不能为空')
+  if ((store.topics || []).includes(value)) {
+    form.topic = value
+    return ElMessage.info('这个主题已经有了，已帮你选中')
+  }
+  await store.save({ topics: [...(store.topics || []), value] })
+  form.topic = value
+  ElMessage.success(`已新增主题「${value}」`)
+}
+
 async function generate() {
   generating.value = true
   try {
-    // 临时输入的新主题顺手记进列表（失败不影响生成）
+    // 老数据里可能留着不在列表中的主题，顺手记进去（失败不影响生成）
     try { await store.rememberTopic(form.topic) } catch (e) { /* 忽略 */ }
     const { data } = await api.generate(form)
     items.value = [...data.sentences, ...items.value]
