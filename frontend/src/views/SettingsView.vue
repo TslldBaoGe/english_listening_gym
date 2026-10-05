@@ -88,7 +88,7 @@
         </el-form-item>
         <el-form-item label="默认主题">
           <div style="display:flex;gap:8px;width:100%">
-            <el-select v-model="form.topic" filterable style="flex:1" placeholder="下拉选择一个主题">
+            <el-select v-model="form.topic" style="flex:1" placeholder="下拉选择一个主题">
               <el-option v-for="t in topicOptions" :key="t" :label="t" :value="t" />
             </el-select>
             <el-button plain style="color:var(--accent);border-color:var(--accent)"

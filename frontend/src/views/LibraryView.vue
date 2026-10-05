@@ -12,7 +12,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="主题">
-          <el-select v-model="q.topic" clearable filterable placeholder="不限"
+          <el-select v-model="q.topic" clearable placeholder="不限"
                      style="width:150px" @change="search">
             <el-option v-for="t in topicOptions" :key="t.topic"
                        :label="`${t.topic}（${t.count}）`" :value="t.topic" />

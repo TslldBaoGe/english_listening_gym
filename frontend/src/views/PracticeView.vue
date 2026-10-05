@@ -14,8 +14,7 @@
         </el-form-item>
         <el-form-item label="主题">
           <div style="display:flex;gap:8px">
-            <el-select v-model="form.topic" filterable style="width:180px"
-                       placeholder="下拉选择一个主题">
+            <el-select v-model="form.topic" style="width:180px" placeholder="下拉选择一个主题">
               <el-option v-for="t in topicOptions" :key="t" :label="t" :value="t" />
             </el-select>
             <el-button plain style="color:var(--accent);border-color:var(--accent)"
