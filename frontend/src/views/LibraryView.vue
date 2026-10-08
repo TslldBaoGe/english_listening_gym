@@ -39,8 +39,7 @@
       <div v-for="it in items" :key="it.id" style="padding:12px 0;border-bottom:1px solid var(--border)">
         <div class="mono" style="color:var(--accent-2);font-size:12px">
           {{ it.difficulty }} · {{ it.topic }} · 错{{ it.wrong_count }}/共{{ it.total_count }}
-          <el-tag v-if="it.mastered" size="small" type="success" effect="dark"
-                  style="margin-left:6px">已掌握</el-tag>
+          <span v-if="it.mastered" class="mastered-tag">已掌握</span>
         </div>
         <p class="mono" style="color:#e6edf3;margin:6px 0">{{ it.text }}</p>
         <p style="color:var(--text-dim);margin:4px 0">{{ it.translation }}</p>

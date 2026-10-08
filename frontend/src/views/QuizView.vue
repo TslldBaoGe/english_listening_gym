@@ -38,8 +38,7 @@
     <div v-for="s in items" :key="s.id" class="card" style="margin-bottom:16px">
       <div class="mono" style="color:var(--accent-2);font-size:12px;margin-bottom:8px">
         {{ s.difficulty }} · {{ s.topic }} · #{{ s.id }}
-        <el-tag v-if="results[s.id] && results[s.id].mastered" size="small"
-                type="success" effect="dark" style="margin-left:8px">已掌握</el-tag>
+        <span v-if="results[s.id] && results[s.id].mastered" class="mastered-tag">已掌握</span>
       </div>
 
       <AudioPlayer :sentence-id="s.id" :rate="store.rate" :loop="store.loop"

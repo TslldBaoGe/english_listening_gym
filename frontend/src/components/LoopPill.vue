@@ -54,20 +54,12 @@ defineEmits(['update:modelValue'])
 
 .loop-pill.on {
   color: var(--accent);
-  border-color: var(--accent);
-  background: radial-gradient(circle at 30% 50%, rgba(56, 189, 248, .22), rgba(168, 85, 247, .12));
-  box-shadow: 0 0 16px rgba(56, 189, 248, .35);
-  animation: loopGlow 2.4s ease-in-out infinite;
+  border-color: rgba(56, 189, 248, .5);
+  background: rgba(56, 189, 248, .10);
+  box-shadow: 0 0 8px rgba(56, 189, 248, .12);
 }
 
-@keyframes loopGlow {
-  0%, 100% { box-shadow: 0 0 12px rgba(56, 189, 248, .28); }
-  50%      { box-shadow: 0 0 22px rgba(168, 85, 247, .45); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .loop-pill.on { animation: none; }
-}
+/* 状态靠描边和淡底区分，不做持续呼吸发光（长时间盯着累眼） */
 
 /* 手机/平板：加大点击区域，样式不变 */
 @media (max-width: 900px) {

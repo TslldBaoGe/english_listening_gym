@@ -35,6 +35,19 @@ html, body {
   margin-bottom: 6px;
 }
 
+/* 「已掌握」标记：跟主题同色系，不用 Element 的绿色 */
+.mastered-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, .45);
+  background: rgba(56, 189, 248, .10);
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 1px;
+  vertical-align: 1px;
+}
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -44,19 +57,19 @@ html, body {
 }
 
 .card:hover {
-  border-color: rgba(56, 189, 248, .4);
-  box-shadow: 0 0 18px rgba(56, 189, 248, .08);
+  border-color: rgba(56, 189, 248, .32);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .28);
 }
 
 .glow-btn {
   color: var(--accent) !important;
-  border-color: var(--accent) !important;
+  border-color: rgba(56, 189, 248, .5) !important;
   background: transparent !important;
 }
 
 .glow-btn:hover {
-  background: rgba(56, 189, 248, .1) !important;
-  box-shadow: 0 0 12px rgba(56, 189, 248, .3);
+  background: rgba(56, 189, 248, .08) !important;
+  box-shadow: none;
 }
 
 /* Element Plus 暗色适配 */
@@ -101,7 +114,7 @@ html, body {
   font-size: 18px;
   font-weight: 700;
   text-decoration: none;
-  text-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.28);
   white-space: nowrap;
   display: flex;
   align-items: baseline;
@@ -167,7 +180,6 @@ html, body {
 .nav-link.active {
   color: var(--accent);
   background: rgba(56, 189, 248, 0.08);
-  text-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
 }
 
 .nav-link.active .nav-idx {
@@ -186,7 +198,7 @@ html, body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 0 24px rgba(56, 189, 248, 0.35));
+  filter: drop-shadow(0 2px 12px rgba(56, 189, 248, 0.18));
 }
 
 .hero-sub {

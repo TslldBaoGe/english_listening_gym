@@ -151,7 +151,7 @@ function play() {
   display: block;
 }
 
-/* 播放键：渐变 + 发光，各平台一致 */
+/* 播放键：暗玻璃底 + 霓虹描边，不刺眼；播放时才微微亮起 */
 .play-btn {
   width: var(--ctl-h);
   height: var(--ctl-h);
@@ -159,37 +159,42 @@ function play() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: none;
+  border: 1px solid rgba(56, 189, 248, .35);
   border-radius: 50%;
   cursor: pointer;
-  color: #041019;
-  background: linear-gradient(145deg, #7fe6ff, var(--accent) 55%, var(--accent-2));
-  box-shadow: 0 0 0 1px rgba(56, 189, 248, .5) inset,
-              0 6px 20px rgba(56, 189, 248, .32);
-  transition: transform .16s cubic-bezier(.2, .8, .2, 1), box-shadow .2s;
+  color: var(--accent);
+  background: radial-gradient(circle at 50% 35%, rgba(56, 189, 248, .16), rgba(20, 26, 38, .9) 70%),
+              var(--bg-card);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
+  transition: transform .16s cubic-bezier(.2, .8, .2, 1), box-shadow .2s, border-color .2s;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 
 .play-btn:hover {
-  transform: scale(1.06);
-  box-shadow: 0 0 0 1px rgba(56, 189, 248, .7) inset,
-              0 8px 26px rgba(56, 189, 248, .45);
+  transform: scale(1.05);
+  border-color: rgba(56, 189, 248, .6);
+  box-shadow: 0 2px 14px rgba(56, 189, 248, .18);
 }
 
 .play-btn:active {
-  transform: scale(.94);
+  transform: scale(.95);
 }
 
 .play-btn.playing {
-  color: #041019;
-  background: linear-gradient(145deg, #bae6fd, var(--accent) 60%, var(--accent-2));
-  animation: playPulse 2.2s ease-in-out infinite;
+  border-color: rgba(56, 189, 248, .55);
+  background: radial-gradient(circle at 50% 35%, rgba(56, 189, 248, .22), rgba(20, 26, 38, .92) 72%),
+              var(--bg-card);
 }
 
-@keyframes playPulse {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(56, 189, 248, .55) inset, 0 6px 20px rgba(56, 189, 248, .3); }
-  50%      { box-shadow: 0 0 0 1px rgba(56, 189, 248, .8) inset, 0 8px 30px rgba(168, 85, 247, .45); }
+/* 播放中只有一圈很淡的呼吸光，避免长时间盯着发酸 */
+.play-btn.playing .icon {
+  animation: playBreathe 2.6s ease-in-out infinite;
+}
+
+@keyframes playBreathe {
+  0%, 100% { opacity: .82; }
+  50%      { opacity: 1; }
 }
 
 .play-btn .spin {
@@ -222,12 +227,13 @@ function play() {
   border-radius: 0 999px 999px 0;
 }
 
+/* 选中态用淡色底 + 亮字，不用整块亮渐变 */
 .rate-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  color: #041019;
-  font-weight: 700;
-  background: linear-gradient(145deg, #7fe6ff, var(--accent));
-  border-color: var(--accent);
-  box-shadow: 0 0 14px rgba(56, 189, 248, .4);
+  color: var(--accent);
+  font-weight: 600;
+  background: rgba(56, 189, 248, .13);
+  border-color: rgba(56, 189, 248, .45);
+  box-shadow: none;
 }
 
 .player-error {
