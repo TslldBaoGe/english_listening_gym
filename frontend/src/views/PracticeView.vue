@@ -56,7 +56,7 @@
       </div>
       <AudioPlayer :sentence-id="s.id" :rate="store.rate" :loop="store.loop"
                    @update:loop="store.setLoop" />
-      <div style="margin-top:14px">
+      <div class="reveal-area" style="margin-top:14px">
         <el-button v-if="!revealed[s.id]" size="small" text style="color:var(--accent)"
                    @click="revealed[s.id] = true">显示原文 / 翻译</el-button>
         <template v-else>

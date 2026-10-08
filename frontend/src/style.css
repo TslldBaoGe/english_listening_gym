@@ -243,4 +243,19 @@ html, body {
     font-size: 14px;
     flex: 0 0 auto;
   }
+
+  /* 手机支架场景：播放器控件和「显示原文/翻译」按钮居中，单手也好点 */
+  .player {
+    justify-content: center;
+  }
+  .reveal-area {
+    text-align: center;
+  }
+  .answer-row {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .answer-row .el-input {
+    flex: 1 1 100% !important;
+  }
 }

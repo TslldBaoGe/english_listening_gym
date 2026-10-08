@@ -47,7 +47,7 @@
                    @update:loop="store.setLoop" />
 
       <!-- 作答区 -->
-      <div style="margin-top:14px;display:flex;gap:8px">
+      <div class="answer-row" style="margin-top:14px;display:flex;gap:8px">
         <el-input v-model="answers[s.id]" class="mono" style="flex:1"
                   placeholder="把你听到的句子打在这里，回车提交"
                   @keyup.enter="submit(s)" />
@@ -57,7 +57,7 @@
       <div class="hint">大小写和标点不影响判定，但要求逐词一致。</div>
 
       <!-- 判定结果 -->
-      <div v-if="results[s.id]" style="margin-top:12px">
+      <div v-if="results[s.id]" class="reveal-area" style="margin-top:12px">
         <p v-if="results[s.id].correct" style="color:var(--accent);margin:0 0 8px">
           ✓ 完全正确 —— 已标记「已掌握」，下次抽题不会再出现
         </p>
@@ -85,7 +85,7 @@
       </div>
 
       <!-- 没作答时也可以直接看原文（等于放弃这次听写） -->
-      <div v-else style="margin-top:12px">
+      <div v-else class="reveal-area" style="margin-top:12px">
         <el-button v-if="!revealed[s.id]" size="small" text style="color:var(--text-dim)"
                    @click="revealed[s.id] = true">看原文 / 翻译（放弃这次）</el-button>
         <template v-else>
