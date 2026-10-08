@@ -14,6 +14,9 @@
         <el-form-item label="数量">
           <el-input-number v-model="form.count" :min="1" :max="5" />
         </el-form-item>
+        <el-form-item label="循环">
+          <LoopPill :model-value="store.loop" @update:model-value="store.setLoop" />
+        </el-form-item>
         <el-form-item>
           <el-button class="glow-btn" type="primary" plain :loading="loading" @click="draw">抽取句子</el-button>
         </el-form-item>
@@ -100,6 +103,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from '../utils/message'
 import api from '../api'
 import AudioPlayer from '../components/AudioPlayer.vue'
+import LoopPill from '../components/LoopPill.vue'
 import { useSettingsStore } from '../stores/settings'
 import { useViewState } from '../composables/useViewState'
 

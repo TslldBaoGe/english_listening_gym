@@ -20,20 +20,7 @@
         <el-radio-button v-for="r in [1.0, 0.85, 0.75, 0.5]" :key="r" :value="r"
                          class="mono">{{ r }}x</el-radio-button>
       </el-radio-group>
-      <button class="loop-btn" :class="{ on: loop }" @click="$emit('update:loop', !loop)"
-              :aria-pressed="loop">
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 9.5A4.5 4.5 0 0 1 8.5 5h9.2" fill="none" stroke="currentColor"
-                stroke-width="1.9" stroke-linecap="round" />
-          <path d="M15.4 2.6 18.8 5l-3.4 2.4" fill="none" stroke="currentColor"
-                stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
-          <path d="M20 14.5A4.5 4.5 0 0 1 15.5 19H6.3" fill="none" stroke="currentColor"
-                stroke-width="1.9" stroke-linecap="round" />
-          <path d="M8.6 21.4 5.2 19l3.4-2.4" fill="none" stroke="currentColor"
-                stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-        <span>{{ loop ? '循环中' : '循环' }}</span>
-      </button>
+      <LoopPill :model-value="loop" @update:model-value="$emit('update:loop', $event)" />
     </div>
     <span v-if="error" class="player-error">{{ error }}</span>
   </div>
@@ -41,6 +28,7 @@
 
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import LoopPill from './LoopPill.vue'
 
 const props = defineProps({
   sentenceId: Number,
@@ -242,51 +230,13 @@ function play() {
   box-shadow: 0 0 14px rgba(56, 189, 248, .4);
 }
 
-/* 循环键：关=低调描边，开=霓虹描边 + 呼吸发光 */
-.loop-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text-dim);
-  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-  font-size: 12.5px;
-  letter-spacing: 1px;
-  cursor: pointer;
-  transition: color .18s, border-color .18s, background .18s, box-shadow .2s;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-.loop-btn:hover {
-  color: var(--accent);
-  border-color: rgba(56, 189, 248, .5);
-}
-
-.loop-btn.on {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: radial-gradient(circle at 30% 50%, rgba(56, 189, 248, .22), rgba(168, 85, 247, .12));
-  box-shadow: 0 0 16px rgba(56, 189, 248, .35);
-  animation: loopGlow 2.4s ease-in-out infinite;
-}
-
-@keyframes loopGlow {
-  0%, 100% { box-shadow: 0 0 12px rgba(56, 189, 248, .28); }
-  50%      { box-shadow: 0 0 22px rgba(168, 85, 247, .45); }
-}
-
 .player-error {
   color: #f56c6c;
   font-size: 13px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .play-btn.playing, .loop-btn.on, .play-btn .spin { animation: none; }
+  .play-btn.playing, .play-btn .spin { animation: none; }
 }
 
 /* 手机/窄屏：改成竖排两行，控件本身样式不变，只放大主播放键 */

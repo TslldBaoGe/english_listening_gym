@@ -30,6 +30,9 @@
             <el-radio value="guy">Guy（男）</el-radio>
           </el-radio-group>
         </el-form-item>
+        <el-form-item label="循环">
+          <LoopPill :model-value="store.loop" @update:model-value="store.setLoop" />
+        </el-form-item>
         <el-form-item>
           <el-button class="glow-btn" type="primary" plain :loading="generating"
                      @click="generate">生成并朗读</el-button>
@@ -69,6 +72,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from '../utils/message'
 import api from '../api'
 import AudioPlayer from '../components/AudioPlayer.vue'
+import LoopPill from '../components/LoopPill.vue'
 import { useSettingsStore } from '../stores/settings'
 import { useViewState } from '../composables/useViewState'
 
