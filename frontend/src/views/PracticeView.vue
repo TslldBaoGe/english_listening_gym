@@ -97,12 +97,17 @@ const viewState = useViewState('el-practice-state-v1',
     Object.assign(revealed, saved.revealed || {})
   })
 
+// 关键：在首次渲染前就同步恢复，页面上不会先闪一下默认值再跳变
+const hasHistory = viewState.restore()
+
 onMounted(async () => {
   const { data } = await api.meta()
   difficulties.value = data.difficulties
   await store.load()
-  Object.assign(form, { difficulty: store.difficulty, topic: store.topic, voice: store.voice })
-  viewState.restore()
+  // 没有历史记录（第一次用）才用设置页的默认值
+  if (!hasHistory) {
+    Object.assign(form, { difficulty: store.difficulty, topic: store.topic, voice: store.voice })
+  }
 })
 
 function clearAll() {

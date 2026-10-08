@@ -20,14 +20,16 @@ export function useViewState(key, snapshot, apply) {
   }, { deep: true })
 
   return {
+    /** 同步恢复（localStorage 是同步读的）。返回是否恢复到了数据。 */
     restore() {
       try {
         const raw = localStorage.getItem(key)
-        if (!raw) return
+        if (!raw) return false
         const saved = JSON.parse(raw)
-        if (saved && typeof saved === 'object') apply(saved)
+        if (saved && typeof saved === 'object') { apply(saved); return true }
+        return false
       } catch (e) {
-        /* 存的内容坏了就忽略，按空状态开始 */
+        return false   /* 存的内容坏了就忽略，按空状态开始 */
       }
     },
     clear() {
