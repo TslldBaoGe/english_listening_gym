@@ -1,19 +1,39 @@
 <template>
   <div class="player">
-    <div class="player-play">
-      <el-button class="glow-btn play-btn" circle size="large" @click="play" :loading="loading">
-        ▶
-      </el-button>
-    </div>
+    <button class="play-btn" :class="{ playing }" @click="play" :aria-label="playing ? '暂停' : '播放'">
+      <svg v-if="loading" class="icon spin" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.4"
+                stroke-linecap="round" stroke-dasharray="42 14" />
+      </svg>
+      <svg v-else-if="playing" class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="7" y="5" width="3.6" height="14" rx="1.2" fill="currentColor" />
+        <rect x="13.4" y="5" width="3.6" height="14" rx="1.2" fill="currentColor" />
+      </svg>
+      <svg v-else class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M8.5 5.6v12.8c0 .9 1 1.4 1.7.9l9-6.4c.6-.4.6-1.4 0-1.8l-9-6.4c-.7-.5-1.7 0-1.7.9z"
+              fill="currentColor" />
+      </svg>
+    </button>
+
     <div class="player-extra">
-      <el-radio-group v-model="localRate" size="small" @change="play">
+      <el-radio-group v-model="localRate" size="small" @change="play" class="rate-group">
         <el-radio-button v-for="r in [1.0, 0.85, 0.75, 0.5]" :key="r" :value="r"
                          class="mono">{{ r }}x</el-radio-button>
       </el-radio-group>
-      <el-button size="small" text class="loop-btn" :class="{ on: loop }"
-                 @click="$emit('update:loop', !loop)">
-        {{ loop ? '🔁 循环中' : '🔁 循环' }}
-      </el-button>
+      <button class="loop-btn" :class="{ on: loop }" @click="$emit('update:loop', !loop)"
+              :aria-pressed="loop">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 9.5A4.5 4.5 0 0 1 8.5 5h9.2" fill="none" stroke="currentColor"
+                stroke-width="1.9" stroke-linecap="round" />
+          <path d="M15.4 2.6 18.8 5l-3.4 2.4" fill="none" stroke="currentColor"
+                stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M20 14.5A4.5 4.5 0 0 1 15.5 19H6.3" fill="none" stroke="currentColor"
+                stroke-width="1.9" stroke-linecap="round" />
+          <path d="M8.6 21.4 5.2 19l3.4-2.4" fill="none" stroke="currentColor"
+                stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span>{{ loop ? '循环中' : '循环' }}</span>
+      </button>
     </div>
     <span v-if="error" class="player-error">{{ error }}</span>
   </div>
@@ -31,6 +51,7 @@ defineEmits(['update:loop'])
 
 const localRate = ref(props.rate)
 const loading = ref(false)
+const playing = ref(false)
 const error = ref('')
 
 // 模块级缓存：同一个音频只下载/缓冲一次。重复点播放 = 直接从头出声，不再转圈。
@@ -58,6 +79,9 @@ function element() {
     el = new Audio(u)
     el.preload = 'auto'
     el.loop = props.loop
+    el.onplaying = () => { loading.value = false; playing.value = true }
+    el.onpause = () => { playing.value = false }
+    el.onended = () => { playing.value = false }   // 循环时不会触发
     cache.set(u, el)
     if (cache.size > CACHE_MAX) {              // 超出上限就释放最旧的一个
       const [oldU, oldEl] = cache.entries().next().value
@@ -113,25 +137,147 @@ function play() {
 </script>
 
 <style scoped>
-/* 桌面：一行排开：播放 · 重播 · 倍速 · 循环 */
+/* ── 统一控制条：电脑/平板/手机同一套配色、圆角、图标与字号，只有排布不同 ── */
 .player {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   flex-wrap: wrap;
-}
-
-.player-play {
-  display: flex;
-  align-items: center;
-  order: 1;
+  --ctl-h: 44px;
 }
 
 .player-extra {
-  order: 2;
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 5px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(148, 163, 184, .07), rgba(148, 163, 184, .02));
+  backdrop-filter: blur(6px);
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+/* 播放键：渐变 + 发光，各平台一致 */
+.play-btn {
+  width: var(--ctl-h);
+  height: var(--ctl-h);
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #041019;
+  background: linear-gradient(145deg, #7fe6ff, var(--accent) 55%, var(--accent-2));
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, .5) inset,
+              0 6px 20px rgba(56, 189, 248, .32);
+  transition: transform .16s cubic-bezier(.2, .8, .2, 1), box-shadow .2s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.play-btn:hover {
+  transform: scale(1.06);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, .7) inset,
+              0 8px 26px rgba(56, 189, 248, .45);
+}
+
+.play-btn:active {
+  transform: scale(.94);
+}
+
+.play-btn.playing {
+  color: #041019;
+  background: linear-gradient(145deg, #bae6fd, var(--accent) 60%, var(--accent-2));
+  animation: playPulse 2.2s ease-in-out infinite;
+}
+
+@keyframes playPulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(56, 189, 248, .55) inset, 0 6px 20px rgba(56, 189, 248, .3); }
+  50%      { box-shadow: 0 0 0 1px rgba(56, 189, 248, .8) inset, 0 8px 30px rgba(168, 85, 247, .45); }
+}
+
+.play-btn .spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 倍速组：和循环键同款胶囊语言 */
+.rate-group :deep(.el-radio-button__inner) {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-dim);
+  font-size: 12px;
+  padding: 7px 11px;
+  transition: color .18s, background .18s, box-shadow .18s;
+}
+
+.rate-group :deep(.el-radio-button__inner:hover) {
+  color: var(--accent);
+}
+
+.rate-group :deep(.el-radio-button:first-child .el-radio-button__inner) {
+  border-radius: 999px 0 0 999px;
+}
+
+.rate-group :deep(.el-radio-button:last-child .el-radio-button__inner) {
+  border-radius: 0 999px 999px 0;
+}
+
+.rate-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  color: #041019;
+  font-weight: 700;
+  background: linear-gradient(145deg, #7fe6ff, var(--accent));
+  border-color: var(--accent);
+  box-shadow: 0 0 14px rgba(56, 189, 248, .4);
+}
+
+/* 循环键：关=低调描边，开=霓虹描边 + 呼吸发光 */
+.loop-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  font-size: 12.5px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: color .18s, border-color .18s, background .18s, box-shadow .2s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.loop-btn:hover {
+  color: var(--accent);
+  border-color: rgba(56, 189, 248, .5);
+}
+
+.loop-btn.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: radial-gradient(circle at 30% 50%, rgba(56, 189, 248, .22), rgba(168, 85, 247, .12));
+  box-shadow: 0 0 16px rgba(56, 189, 248, .35);
+  animation: loopGlow 2.4s ease-in-out infinite;
+}
+
+@keyframes loopGlow {
+  0%, 100% { box-shadow: 0 0 12px rgba(56, 189, 248, .28); }
+  50%      { box-shadow: 0 0 22px rgba(168, 85, 247, .45); }
 }
 
 .player-error {
@@ -139,45 +285,42 @@ function play() {
   font-size: 13px;
 }
 
-.loop-btn {
-  color: var(--text-dim);
-  border: 1px solid transparent;
-}
-.loop-btn.on {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: rgba(56, 189, 248, .08);
+@media (prefers-reduced-motion: reduce) {
+  .play-btn.playing, .loop-btn.on, .play-btn .spin { animation: none; }
 }
 
-/* 手机/窄屏：竖排，播放键独占一行并居中 */
+/* 手机/窄屏：改成竖排两行，控件本身样式不变，只放大主播放键 */
 @media (max-width: 720px) {
   .player {
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-  }
-  .player-play {
-    order: 1;
+    gap: 14px;
+    --ctl-h: 62px;
   }
   .player-extra {
-    order: 2;
-    justify-content: center;
-    flex-wrap: wrap;
+    padding: 6px 8px;
     gap: 8px;
-    padding: 6px 12px;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: rgba(148, 163, 184, .04);
+    max-width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
   }
-  .play-btn {
-    width: 64px !important;
-    height: 64px !important;
-    font-size: 24px !important;
-    padding: 0 !important;
-    box-shadow: 0 0 22px rgba(56, 189, 248, .28);
+  .icon {
+    width: 22px;
+    height: 22px;
+  }
+  .play-btn .icon {
+    width: 26px;
+    height: 26px;
   }
   .player-error {
     text-align: center;
+  }
+}
+
+/* 平板（721–1080px）：保持一行，只是不换行得更整齐 */
+@media (min-width: 721px) and (max-width: 1080px) {
+  .player {
+    gap: 12px;
   }
 }
 </style>

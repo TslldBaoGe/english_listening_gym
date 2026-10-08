@@ -30,10 +30,6 @@
             <el-radio value="guy">Guy（男）</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="循环">
-          <el-switch :model-value="store.loop" inline-prompt active-text="循环" inactive-text="单次"
-                     @update:model-value="store.setLoop" />
-        </el-form-item>
         <el-form-item>
           <el-button class="glow-btn" type="primary" plain :loading="generating"
                      @click="generate">生成并朗读</el-button>
