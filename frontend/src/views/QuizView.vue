@@ -7,7 +7,8 @@
     <div class="card" style="margin-bottom:20px">
       <el-form inline>
         <el-form-item label="难度">
-          <el-select v-model="form.difficulty" clearable placeholder="不限" style="width:160px">
+          <el-select v-model="form.difficulty" v-touch-open placeholder="不限" style="width:170px">
+            <el-option label="不限（全部难度）" :value="null" />
             <el-option v-for="d in difficulties" :key="d.code"
               :label="`${d.code} ${d.label}（雅思 ${d.ielts} / ${d.cefr}）`" :value="d.code" />
           </el-select>
@@ -97,7 +98,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from '../utils/message'
 import api from '../api'
 import AudioPlayer from '../components/AudioPlayer.vue'

@@ -6,20 +6,22 @@
     <div class="card" style="margin-bottom:16px">
       <el-form inline>
         <el-form-item label="难度">
-          <el-select v-model="q.difficulty" clearable placeholder="不限" style="width:120px"
+          <el-select v-model="q.difficulty" v-touch-open placeholder="不限" style="width:150px"
                      @change="search">
-            <el-option v-for="d in difficulties" :key="d.code" :label="d.code" :value="d.code" />
+            <el-option label="不限（全部难度）" :value="null" />
+            <el-option v-for="d in difficulties" :key="d.code"
+              :label="`${d.code} ${d.label}`" :value="d.code" />
           </el-select>
         </el-form-item>
         <el-form-item label="主题">
-          <el-select v-model="q.topic" clearable placeholder="不限"
+          <el-select v-touch-open v-model="q.topic" clearable placeholder="不限"
                      style="width:150px" @change="search">
             <el-option v-for="t in topicOptions" :key="t.topic"
                        :label="`${t.topic}（${t.count}）`" :value="t.topic" />
           </el-select>
         </el-form-item>
         <el-form-item label="掌握情况">
-          <el-select v-model="q.mastered" clearable placeholder="不限" style="width:110px"
+          <el-select v-touch-open v-model="q.mastered" clearable placeholder="不限" style="width:110px"
                      @change="search">
             <el-option label="已掌握" :value="true" />
             <el-option label="未掌握" :value="false" />

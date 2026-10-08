@@ -11,7 +11,7 @@
       <el-form label-width="110px">
         <el-form-item label="模型配置">
           <div style="display:flex;gap:8px;width:100%">
-            <el-select v-model="pickedId" style="flex:1" placeholder="下拉选择一个配置"
+            <el-select v-touch-open v-model="pickedId" style="flex:1" placeholder="下拉选择一个配置"
                        @change="onPick">
               <el-option v-for="c in configs" :key="c.id" :value="c.id"
                          :label="c.name + (c.id === activeId ? '　·　当前使用' : '')" />
@@ -26,7 +26,7 @@
             <el-input v-model="llm.name" class="mono" placeholder="自己起名，例如：我的中转 / DeepSeek" />
           </el-form-item>
           <el-form-item label="类型">
-            <el-select v-model="llm.provider" style="width:100%">
+            <el-select v-touch-open v-model="llm.provider" style="width:100%">
               <el-option v-for="(p, key) in providers" :key="key"
                 :label="p.label" :value="key" />
             </el-select>
@@ -39,7 +39,7 @@
           </el-form-item>
           <el-form-item label="模型">
             <div style="display:flex;gap:8px;width:100%">
-              <el-select v-if="modelList.length" v-model="llm.model" filterable allow-create
+              <el-select v-touch-open v-if="modelList.length" v-model="llm.model" filterable allow-create
                          class="mono" style="flex:1" placeholder="选择或输入模型">
                 <el-option v-for="m in modelList" :key="m" :label="m" :value="m" class="mono" />
               </el-select>
@@ -78,14 +78,14 @@
       <div class="section-tag">练习默认参数</div>
       <el-form label-width="110px">
         <el-form-item label="默认难度">
-          <el-select v-model="form.difficulty">
+          <el-select v-touch-open v-model="form.difficulty">
             <el-option v-for="d in difficulties" :key="d.code"
               :label="`${d.code} ${d.label}（雅思 ${d.ielts}）`" :value="d.code" />
           </el-select>
         </el-form-item>
         <el-form-item label="默认主题">
           <div style="display:flex;gap:8px;width:100%">
-            <el-select v-model="form.topic" style="flex:1" placeholder="下拉选择一个主题">
+            <el-select v-touch-open v-model="form.topic" style="flex:1" placeholder="下拉选择一个主题">
               <el-option v-for="t in topicOptions" :key="t" :label="t" :value="t" />
             </el-select>
             <SkyButton size="small" variant="ghost" @click="addTopic">＋ 新增</SkyButton>

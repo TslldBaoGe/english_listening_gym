@@ -7,14 +7,14 @@
     <div class="card" style="margin-bottom:20px">
       <el-form inline>
         <el-form-item label="难度">
-          <el-select v-model="form.difficulty" style="width:200px">
+          <el-select v-model="form.difficulty" v-touch-open style="width:200px">
             <el-option v-for="d in difficulties" :key="d.code"
               :label="`${d.code} ${d.label}（雅思 ${d.ielts} / ${d.cefr}）`" :value="d.code" />
           </el-select>
         </el-form-item>
         <el-form-item label="主题">
           <div style="display:flex;gap:8px">
-            <el-select v-model="form.topic" style="width:180px" placeholder="下拉选择一个主题">
+            <el-select v-touch-open v-model="form.topic" style="width:180px" placeholder="下拉选择一个主题">
               <el-option v-for="t in topicOptions" :key="t" :label="t" :value="t" />
             </el-select>
             <SkyButton size="small" variant="ghost" @click="addTopic">＋ 新增</SkyButton>
