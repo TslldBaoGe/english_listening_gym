@@ -244,18 +244,35 @@ html, body {
     flex: 0 0 auto;
   }
 
-  /* 手机支架场景：播放器控件和「显示原文/翻译」按钮居中，单手也好点 */
-  .player {
-    justify-content: center;
-  }
+  /* 手机支架场景：播放器控件居中；原文/翻译做成好点的大按钮 */
   .reveal-area {
     text-align: center;
+  }
+  .reveal-area > .el-button:not(.is-text) {
+    min-width: 220px;
+  }
+  .reveal-area > .el-button.is-text {
+    min-width: 220px;
+    height: auto !important;
+    padding: 10px 18px;
+    line-height: 1.4;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(56, 189, 248, .06);
+  }
+  .reveal-area > .el-button.is-text:active {
+    border-color: var(--accent);
+    background: rgba(56, 189, 248, .14);
   }
   .answer-row {
     flex-wrap: wrap;
     justify-content: center;
+    gap: 10px !important;
   }
   .answer-row .el-input {
     flex: 1 1 100% !important;
+  }
+  .answer-row .el-button {
+    min-width: 200px;
   }
 }

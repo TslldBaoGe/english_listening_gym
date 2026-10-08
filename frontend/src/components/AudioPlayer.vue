@@ -1,18 +1,22 @@
 <template>
-  <div class="player" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <el-button class="glow-btn" circle size="large" @click="play" :loading="loading">
-      ▶
-    </el-button>
-    <el-button text style="color:var(--text-dim)" @click="restart">重播</el-button>
-    <el-radio-group v-model="localRate" size="small" @change="play">
-      <el-radio-button v-for="r in [1.0, 0.85, 0.75, 0.5]" :key="r" :value="r"
-                       class="mono">{{ r }}x</el-radio-button>
-    </el-radio-group>
-    <el-button size="small" text class="loop-btn" :class="{ on: loop }"
-               @click="$emit('update:loop', !loop)">
-      {{ loop ? '🔁 循环中' : '🔁 循环' }}
-    </el-button>
-    <span v-if="error" style="color:#f56c6c;font-size:13px">{{ error }}</span>
+  <div class="player">
+    <div class="player-main">
+      <el-button class="glow-btn play-btn" circle size="large" @click="play" :loading="loading">
+        ▶
+      </el-button>
+      <el-button class="replay-btn" text @click="restart">重播</el-button>
+    </div>
+    <div class="player-extra">
+      <el-radio-group v-model="localRate" size="small" @change="play">
+        <el-radio-button v-for="r in [1.0, 0.85, 0.75, 0.5]" :key="r" :value="r"
+                         class="mono">{{ r }}x</el-radio-button>
+      </el-radio-group>
+      <el-button size="small" text class="loop-btn" :class="{ on: loop }"
+                 @click="$emit('update:loop', !loop)">
+        {{ loop ? '🔁 循环中' : '🔁 循环' }}
+      </el-button>
+    </div>
+    <span v-if="error" class="player-error">{{ error }}</span>
   </div>
 </template>
 
@@ -120,6 +124,30 @@ function restart() {
 </script>
 
 <style scoped>
+/* 桌面：一行排开，和原来一致 */
+.player {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.player-main,
+.player-extra {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.replay-btn {
+  color: var(--text-dim);
+}
+
+.player-error {
+  color: #f56c6c;
+  font-size: 13px;
+}
+
 .loop-btn {
   color: var(--text-dim);
   border: 1px solid transparent;
@@ -128,5 +156,35 @@ function restart() {
   color: var(--accent);
   border-color: var(--accent);
   background: rgba(56, 189, 248, .08);
+}
+
+/* 手机/窄屏：纵向居中成两行——大播放键一行，次要控件一行 */
+@media (max-width: 720px) {
+  .player {
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .player-main {
+    gap: 16px;
+  }
+  .player-extra {
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(148, 163, 184, .04);
+  }
+  .play-btn {
+    width: 58px !important;
+    height: 58px !important;
+    font-size: 22px !important;
+    padding: 0 !important;
+  }
+  .player-error {
+    text-align: center;
+  }
 }
 </style>
