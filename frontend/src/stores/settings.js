@@ -3,8 +3,14 @@ import api from '../api'
 
 export const useSettingsStore = defineStore('settings', {
   state: () => ({ difficulty: 'L1', topic: 'daily life', voice: 'aria', rate: 1.0,
-                  topics: [], loaded: false }),
+                  topics: [], loaded: false,
+                  // 循环播放是纯前端偏好，直接存本机
+                  loop: localStorage.getItem('el-loop') === '1' }),
   actions: {
+    setLoop(v) {
+      this.loop = !!v
+      localStorage.setItem('el-loop', this.loop ? '1' : '0')
+    },
     async load() {
       if (this.loaded) return
       const { data } = await api.getSettings()

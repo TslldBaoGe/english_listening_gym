@@ -30,6 +30,10 @@
             <el-radio value="guy">Guy（男）</el-radio>
           </el-radio-group>
         </el-form-item>
+        <el-form-item label="循环">
+          <el-switch :model-value="store.loop" inline-prompt active-text="循环" inactive-text="单次"
+                     @update:model-value="store.setLoop" />
+        </el-form-item>
         <el-form-item>
           <el-button class="glow-btn" type="primary" plain :loading="generating"
                      @click="generate">生成并朗读</el-button>
@@ -50,7 +54,8 @@
       <div class="mono" style="color:var(--accent-2);font-size:12px;margin-bottom:8px">
         {{ s.difficulty }} · {{ s.topic }} · #{{ s.id }}
       </div>
-      <AudioPlayer :sentence-id="s.id" :rate="store.rate" />
+      <AudioPlayer :sentence-id="s.id" :rate="store.rate" :loop="store.loop"
+                   @update:loop="store.setLoop" />
       <div style="margin-top:14px">
         <el-button v-if="!revealed[s.id]" size="small" text style="color:var(--accent)"
                    @click="revealed[s.id] = true">显示原文 / 翻译</el-button>

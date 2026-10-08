@@ -3,11 +3,15 @@
     <el-button class="glow-btn" circle size="large" @click="play" :loading="loading">
       ▶
     </el-button>
-    <el-button text style="color:var(--text-dim)" @click="play">重播</el-button>
+    <el-button text style="color:var(--text-dim)" @click="restart">重播</el-button>
     <el-radio-group v-model="localRate" size="small" @change="play">
       <el-radio-button v-for="r in [1.0, 0.85, 0.75, 0.5]" :key="r" :value="r"
                        class="mono">{{ r }}x</el-radio-button>
     </el-radio-group>
+    <el-button size="small" text class="loop-btn" :class="{ on: loop }"
+               @click="$emit('update:loop', !loop)">
+      {{ loop ? '🔁 循环中' : '🔁 循环' }}
+    </el-button>
     <span v-if="error" style="color:#f56c6c;font-size:13px">{{ error }}</span>
   </div>
 </template>
@@ -15,7 +19,13 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 
-const props = defineProps({ sentenceId: Number, rate: { type: Number, default: 1.0 } })
+const props = defineProps({
+  sentenceId: Number,
+  rate: { type: Number, default: 1.0 },
+  loop: { type: Boolean, default: false },
+})
+defineEmits(['update:loop'])
+
 const localRate = ref(props.rate)
 const loading = ref(false)
 const error = ref('')
@@ -28,6 +38,12 @@ let current = null           // 当前在播的元素，切句时把它停掉
 // 设置是异步加载的，外部 rate 到位后同步到本地
 watch(() => props.rate, (r) => { localRate.value = Number(r) || 1.0 })
 
+// 循环开关一变，立刻同步到已缓存/正在播的音频
+watch(() => props.loop, (v) => {
+  cache.forEach(el => { el.loop = v })
+  if (current) current.loop = v
+}, { immediate: true })
+
 function src() {
   return `/api/audio/${props.sentenceId}?rate=${localRate.value}`
 }
@@ -38,6 +54,7 @@ function element() {
   if (!el) {
     el = new Audio(u)
     el.preload = 'auto'
+    el.loop = props.loop
     cache.set(u, el)
     if (cache.size > CACHE_MAX) {              // 超出上限就释放最旧的一个
       const [oldU, oldEl] = cache.entries().next().value
@@ -71,8 +88,10 @@ function start(el) {
 }
 
 function play() {
-  error.value = ''
   const el = element()
+  // 正在播同一句：再点就是暂停，不用重新走一遍加载
+  if (current === el && !el.paused && !el.ended) { el.pause(); return }
+  error.value = ''
   if (current && current !== el) current.pause()
   current = el
   el.onerror = () => { loading.value = false; error.value = '音频加载失败' }
@@ -88,4 +107,26 @@ function play() {
   el.onplaying = () => { loading.value = false }
   start(el)
 }
+
+/** 重播：无论当前是否在播，都从头开始 */
+function restart() {
+  error.value = ''
+  const el = element()
+  if (current && current !== el) current.pause()
+  current = el
+  if (el.readyState >= 3) loading.value = false
+  start(el)
+}
 </script>
+
+<style scoped>
+.loop-btn {
+  color: var(--text-dim);
+  border: 1px solid transparent;
+}
+.loop-btn.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(56, 189, 248, .08);
+}
+</style>

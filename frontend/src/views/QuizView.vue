@@ -14,6 +14,10 @@
         <el-form-item label="数量">
           <el-input-number v-model="form.count" :min="1" :max="5" />
         </el-form-item>
+        <el-form-item label="循环">
+          <el-switch :model-value="store.loop" inline-prompt active-text="循环" inactive-text="单次"
+                     @update:model-value="store.setLoop" />
+        </el-form-item>
         <el-form-item>
           <el-button class="glow-btn" type="primary" plain :loading="loading" @click="draw">抽取句子</el-button>
         </el-form-item>
@@ -39,7 +43,8 @@
                 type="success" effect="dark" style="margin-left:8px">已掌握</el-tag>
       </div>
 
-      <AudioPlayer :sentence-id="s.id" :rate="store.rate" />
+      <AudioPlayer :sentence-id="s.id" :rate="store.rate" :loop="store.loop"
+                   @update:loop="store.setLoop" />
 
       <!-- 作答区 -->
       <div style="margin-top:14px;display:flex;gap:8px">
