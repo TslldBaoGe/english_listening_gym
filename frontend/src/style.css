@@ -301,6 +301,8 @@ html, body {
   color: var(--text-dim) !important;
   font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
   transition: color .16s, background .16s, box-shadow .2s;
+  /* EP 给每个按钮常驻 outline: var(--el-border)（浅灰圈），关掉——外框和分隔线已有 */
+  outline: none !important;
 }
 
 .el-radio-button__inner:hover {
@@ -597,4 +599,17 @@ html, body {
 
 @media (prefers-reduced-motion: reduce) {
   .el-message-box::before, .el-dialog::before { animation: none; }
+}
+
+/* 焦点描边：EP 默认是浅灰 #dcdfe6，统一为主题色（触屏点按也会触发 focus-visible） */
+:focus,
+:focus-visible {
+  outline-color: rgba(56, 189, 248, .65);
+}
+
+/* 胶囊单选的焦点圈用主题色细环，贴合格子 */
+.el-radio-button__original-radio:focus-visible + .el-radio-button__inner {
+  outline: 2px solid rgba(56, 189, 248, .55);
+  outline-offset: 1px;
+  border-radius: inherit;
 }
