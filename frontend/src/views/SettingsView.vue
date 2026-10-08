@@ -121,7 +121,10 @@ import { useSettingsStore } from '../stores/settings'
 import SkyButton from '../components/SkyButton.vue'
 
 const store = useSettingsStore()
-const difficulties = ref([])
+// 首帧同步用缓存的难度配置，完整文案立刻可显示（后台再刷新）
+const difficulties = ref((() => {
+  try { return JSON.parse(localStorage.getItem('el-meta-cache'))?.difficulties || [] } catch { return [] }
+})())
 const providers = ref({})
 const configs = ref([])
 const activeId = ref('')
@@ -154,7 +157,9 @@ const modelList = ref([])
 const fetchingModels = ref(false)
 
 onMounted(async () => {
-  difficulties.value = (await api.meta()).data.difficulties
+  const meta = (await api.meta()).data
+  difficulties.value = meta.difficulties
+  try { localStorage.setItem('el-meta-cache', JSON.stringify(meta)) } catch (e) { /* 忽略 */ }
   providers.value = (await api.get('/settings/llm/providers')).data
   await store.load()
   Object.assign(form, { difficulty: store.difficulty, topic: store.topic,

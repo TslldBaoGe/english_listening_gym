@@ -69,7 +69,10 @@ import AudioPlayer from '../components/AudioPlayer.vue'
 import SkyButton from '../components/SkyButton.vue'
 import { useViewState } from '../composables/useViewState'
 
-const difficulties = ref([])
+// 首帧同步用缓存的难度配置，完整文案立刻可显示（后台再刷新）
+const difficulties = ref((() => {
+  try { return JSON.parse(localStorage.getItem('el-meta-cache'))?.difficulties || [] } catch { return [] }
+})())
 const items = ref([])
 const total = ref(0)
 const topicList = ref([])      // 知识库里实际有的主题 + 句数
@@ -89,7 +92,9 @@ const viewState = useViewState('el-library-query-v1',
   (saved) => { Object.assign(q, saved) })
 
 onMounted(async () => {
-  difficulties.value = (await api.meta()).data.difficulties
+  const meta = (await api.meta()).data
+  difficulties.value = meta.difficulties
+  try { localStorage.setItem('el-meta-cache', JSON.stringify(meta)) } catch (e) { /* 忽略 */ }
   viewState.restore()
   load()
 })

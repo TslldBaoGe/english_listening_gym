@@ -77,7 +77,10 @@ import { useSettingsStore } from '../stores/settings'
 import { useViewState } from '../composables/useViewState'
 
 const store = useSettingsStore()
-const difficulties = ref([])
+// 首帧同步用缓存的难度配置，完整文案立刻可显示（后台再刷新）
+const difficulties = ref((() => {
+  try { return JSON.parse(localStorage.getItem('el-meta-cache'))?.difficulties || [] } catch { return [] }
+})())
 const form = reactive({ difficulty: 'L1', topic: 'daily life', count: 1, voice: 'aria' })
 const items = ref([])
 const revealed = reactive({})
@@ -103,6 +106,7 @@ const hasHistory = viewState.restore()
 onMounted(async () => {
   const { data } = await api.meta()
   difficulties.value = data.difficulties
+  try { localStorage.setItem('el-meta-cache', JSON.stringify(data)) } catch (e) { /* 忽略 */ }
   await store.load()
   // 没有历史记录（第一次用）才用设置页的默认值
   if (!hasHistory) {

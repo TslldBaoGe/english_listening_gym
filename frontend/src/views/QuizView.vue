@@ -108,7 +108,10 @@ import { useSettingsStore } from '../stores/settings'
 import { useViewState } from '../composables/useViewState'
 
 const store = useSettingsStore()
-const difficulties = ref([])
+// 首帧同步用缓存的难度配置，完整文案立刻可显示（后台再刷新）
+const difficulties = ref((() => {
+  try { return JSON.parse(localStorage.getItem('el-meta-cache'))?.difficulties || [] } catch { return [] }
+})())
 const form = reactive({ difficulty: null, count: 1, includeMastered: false })
 const items = ref([])
 const revealed = reactive({})
@@ -133,7 +136,9 @@ const viewState = useViewState('el-quiz-state-v1',
 viewState.restore()
 
 onMounted(async () => {
-  difficulties.value = (await api.meta()).data.difficulties
+  const meta = (await api.meta()).data
+  difficulties.value = meta.difficulties
+  try { localStorage.setItem('el-meta-cache', JSON.stringify(meta)) } catch (e) { /* 忽略 */ }
   await store.load()
 })
 
