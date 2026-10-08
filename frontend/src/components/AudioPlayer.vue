@@ -5,7 +5,6 @@
         ▶
       </el-button>
     </div>
-    <el-button class="replay-btn" text @click="restart">重播</el-button>
     <div class="player-extra">
       <el-radio-group v-model="localRate" size="small" @change="play">
         <el-radio-button v-for="r in [1.0, 0.85, 0.75, 0.5]" :key="r" :value="r"
@@ -111,16 +110,6 @@ function play() {
   el.onplaying = () => { loading.value = false }
   start(el)
 }
-
-/** 重播：无论当前是否在播，都从头开始 */
-function restart() {
-  error.value = ''
-  const el = element()
-  if (current && current !== el) current.pause()
-  current = el
-  if (el.readyState >= 3) loading.value = false
-  start(el)
-}
 </script>
 
 <style scoped>
@@ -138,13 +127,8 @@ function restart() {
   order: 1;
 }
 
-.replay-btn {
-  order: 2;
-  color: var(--text-dim);
-}
-
 .player-extra {
-  order: 3;
+  order: 2;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -184,10 +168,6 @@ function restart() {
     border: 1px solid var(--border);
     border-radius: 999px;
     background: rgba(148, 163, 184, .04);
-  }
-  .replay-btn {
-    order: 3;
-    font-size: 13px;
   }
   .play-btn {
     width: 64px !important;
