@@ -1,25 +1,30 @@
 <template>
   <div class="player">
-    <button class="play-btn" :class="{ playing }" @click="play" :aria-label="playing ? '暂停' : '播放'">
-      <svg v-if="loading" class="icon spin" viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.4"
-                stroke-linecap="round" stroke-dasharray="42 14" />
-      </svg>
-      <svg v-else-if="playing" class="icon" viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="7" y="5" width="3.6" height="14" rx="1.2" fill="currentColor" />
-        <rect x="13.4" y="5" width="3.6" height="14" rx="1.2" fill="currentColor" />
-      </svg>
-      <svg v-else class="icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M8.5 5.6v12.8c0 .9 1 1.4 1.7.9l9-6.4c.6-.4.6-1.4 0-1.8l-9-6.4c-.7-.5-1.7 0-1.7.9z"
-              fill="currentColor" />
-      </svg>
+    <button class="ctl play-btn" :class="{ playing }" @click="play"
+            :aria-label="playing ? '暂停' : '播放'">
+      <SkyBackdrop :delay="0" />
+      <span class="ctl-inner">
+        <svg v-if="loading" class="icon spin" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.4"
+                  stroke-linecap="round" stroke-dasharray="42 14" />
+        </svg>
+        <svg v-else-if="playing" class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="7" y="5" width="3.6" height="14" rx="1.2" fill="currentColor" />
+          <rect x="13.4" y="5" width="3.6" height="14" rx="1.2" fill="currentColor" />
+        </svg>
+        <svg v-else class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8.5 5.6v12.8c0 .9 1 1.4 1.7.9l9-6.4c.6-.4.6-1.4 0-1.8l-9-6.4c-.7-.5-1.7 0-1.7.9z"
+                fill="currentColor" />
+        </svg>
+      </span>
     </button>
 
     <div class="player-extra">
-      <el-radio-group v-model="localRate" size="small" @change="play" class="rate-group">
-        <el-radio-button v-for="r in [1.0, 0.85, 0.75, 0.5]" :key="r" :value="r"
-                         class="mono">{{ r }}x</el-radio-button>
-      </el-radio-group>
+      <button v-for="(r, i) in rates" :key="r" class="ctl rate-btn"
+              :class="{ active: localRate === r }" @click="setRate(r)">
+        <SkyBackdrop :delay="i * 1.3" />
+        <span class="ctl-inner mono">{{ r }}x</span>
+      </button>
       <LoopPill :model-value="loop" @update:model-value="$emit('update:loop', $event)" />
     </div>
     <span v-if="error" class="player-error">{{ error }}</span>
@@ -29,6 +34,7 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import LoopPill from './LoopPill.vue'
+import SkyBackdrop from './SkyBackdrop.vue'
 
 const props = defineProps({
   sentenceId: Number,
@@ -37,6 +43,7 @@ const props = defineProps({
 })
 defineEmits(['update:loop'])
 
+const rates = [1.0, 0.85, 0.75, 0.5]
 const localRate = ref(props.rate)
 const loading = ref(false)
 const playing = ref(false)
@@ -102,8 +109,7 @@ function start(el) {
   if (p && typeof p.catch === 'function') p.catch(blocked)
 }
 
-function play() {
-  const el = element()
+function play() {  const el = element()
   // 正在播同一句：再点就是暂停，不用重新走一遍加载
   if (current === el && !el.paused && !el.ended) { el.pause(); return }
   error.value = ''
@@ -122,10 +128,29 @@ function play() {
   el.onplaying = () => { loading.value = false }
   start(el)
 }
+
+/** 切倍速：换 URL 重新加载，保持播放位置与播放状态 */
+function setRate(r) {
+  const wasPlaying = playing.value || loading.value
+  const at = current ? current.currentTime : 0
+  localRate.value = r
+  const el = element()
+  if (current && current !== el) current.pause()
+  current = el
+  el.currentTime = at
+  if (wasPlaying) {
+    loading.value = true
+    const p = el.play()
+    if (p && typeof p.catch === 'function') p.catch(blocked)
+  } else {
+    loading.value = false
+  }
+}
 </script>
 
+
 <style scoped>
-/* ── 统一控制条：电脑/平板/手机同一套配色、圆角、图标与字号，只有排布不同 ── */
+/* ── 统一控制条：电脑/平板/手机同一套外观，只有排布不同 ── */
 .player {
   display: flex;
   align-items: center;
@@ -137,12 +162,47 @@ function play() {
 .player-extra {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 5px 6px;
+  gap: 8px;
+  padding: 5px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(148, 163, 184, .07), rgba(148, 163, 184, .02));
+  background: linear-gradient(180deg, rgba(148, 163, 184, .06), rgba(148, 163, 184, .02));
   backdrop-filter: blur(6px);
+}
+
+/* 所有控制键共用同一套「夜空玻璃」外观：深底 + 星点 + 霓虹描边 */
+.ctl {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(16, 22, 36, .92), rgba(9, 13, 22, .96));
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color .18s, border-color .18s, box-shadow .2s, transform .16s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+}
+
+.ctl:hover {
+  color: var(--accent);
+  border-color: rgba(56, 189, 248, .5);
+}
+
+.ctl:active {
+  transform: scale(.96);
+}
+
+.ctl-inner {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .icon {
@@ -151,43 +211,27 @@ function play() {
   display: block;
 }
 
-/* 播放键：暗玻璃底 + 霓虹描边，不刺眼；播放时才微微亮起 */
+/* 播放键：圆形 */
 .play-btn {
   width: var(--ctl-h);
   height: var(--ctl-h);
   flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(56, 189, 248, .35);
   border-radius: 50%;
-  cursor: pointer;
   color: var(--accent);
-  background: radial-gradient(circle at 50% 35%, rgba(56, 189, 248, .16), rgba(20, 26, 38, .9) 70%),
-              var(--bg-card);
+  border-color: rgba(56, 189, 248, .35);
   box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
-  transition: transform .16s cubic-bezier(.2, .8, .2, 1), box-shadow .2s, border-color .2s;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
 }
 
 .play-btn:hover {
-  transform: scale(1.05);
   border-color: rgba(56, 189, 248, .6);
-  box-shadow: 0 2px 14px rgba(56, 189, 248, .18);
-}
-
-.play-btn:active {
-  transform: scale(.95);
+  box-shadow: 0 2px 14px rgba(56, 189, 248, .16);
 }
 
 .play-btn.playing {
-  border-color: rgba(56, 189, 248, .55);
-  background: radial-gradient(circle at 50% 35%, rgba(56, 189, 248, .22), rgba(20, 26, 38, .92) 72%),
-              var(--bg-card);
+  border-color: rgba(56, 189, 248, .6);
 }
 
-/* 播放中只有一圈很淡的呼吸光，避免长时间盯着发酸 */
+/* 播放中只有很淡的呼吸，不要闪 */
 .play-btn.playing .icon {
   animation: playBreathe 2.6s ease-in-out infinite;
 }
@@ -205,35 +249,20 @@ function play() {
   to { transform: rotate(360deg); }
 }
 
-/* 倍速组：和循环键同款胶囊语言 */
-.rate-group :deep(.el-radio-button__inner) {
-  background: transparent;
-  border-color: var(--border);
-  color: var(--text-dim);
+/* 倍速键：同款夜空胶囊 */
+.rate-btn {
+  height: 30px;
+  min-width: 46px;
+  padding: 0 10px;
+  border-radius: 999px;
   font-size: 12px;
-  padding: 7px 11px;
-  transition: color .18s, background .18s, box-shadow .18s;
+  letter-spacing: .5px;
 }
 
-.rate-group :deep(.el-radio-button__inner:hover) {
+.rate-btn.active {
   color: var(--accent);
-}
-
-.rate-group :deep(.el-radio-button:first-child .el-radio-button__inner) {
-  border-radius: 999px 0 0 999px;
-}
-
-.rate-group :deep(.el-radio-button:last-child .el-radio-button__inner) {
-  border-radius: 0 999px 999px 0;
-}
-
-/* 选中态用淡色底 + 亮字，不用整块亮渐变 */
-.rate-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  color: var(--accent);
-  font-weight: 600;
-  background: rgba(56, 189, 248, .13);
-  border-color: rgba(56, 189, 248, .45);
-  box-shadow: none;
+  border-color: rgba(56, 189, 248, .5);
+  box-shadow: inset 0 0 12px rgba(56, 189, 248, .12);
 }
 
 .player-error {
@@ -242,10 +271,10 @@ function play() {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .play-btn.playing, .play-btn .spin { animation: none; }
+  .play-btn.playing .icon, .play-btn .spin { animation: none; }
 }
 
-/* 手机/窄屏：改成竖排两行，控件本身样式不变，只放大主播放键 */
+/* 手机/窄屏：竖排两行，控件本身外观不变，只放大主播放键和点按区域 */
 @media (max-width: 720px) {
   .player {
     flex-direction: column;
@@ -254,11 +283,12 @@ function play() {
     --ctl-h: 62px;
   }
   .player-extra {
-    padding: 6px 8px;
-    gap: 8px;
+    padding: 6px;
+    gap: 6px;
     max-width: 100%;
     flex-wrap: wrap;
     justify-content: center;
+    border-radius: 22px;
   }
   .icon {
     width: 22px;
@@ -268,15 +298,13 @@ function play() {
     width: 26px;
     height: 26px;
   }
+  .rate-btn {
+    height: 38px;
+    min-width: 58px;
+    font-size: 13px;
+  }
   .player-error {
     text-align: center;
-  }
-}
-
-/* 平板（721–1080px）：保持一行，只是不换行得更整齐 */
-@media (min-width: 721px) and (max-width: 1080px) {
-  .player {
-    gap: 12px;
   }
 }
 </style>

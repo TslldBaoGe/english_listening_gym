@@ -78,6 +78,113 @@ html, body {
   color: var(--text) !important;
 }
 
+/* 输入框 / 下拉框 / 数字框：默认是白底浅灰边，这里统一成深色主题 */
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper,
+.el-input-number,
+.el-input-number__decrease,
+.el-input-number__increase {
+  background-color: rgba(9, 13, 22, .75) !important;
+  box-shadow: 0 0 0 1px var(--border) inset !important;
+  color: var(--text) !important;
+}
+
+.el-input__wrapper:hover,
+.el-select__wrapper:hover,
+.el-input-number:hover {
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, .45) inset !important;
+}
+
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused,
+.el-input-number.is-focus {
+  box-shadow: 0 0 0 1px var(--accent) inset !important;
+}
+
+.el-input__inner,
+.el-textarea__inner,
+.el-select__placeholder,
+.el-select__selected-item,
+.el-input-number__decrease,
+.el-input-number__increase {
+  color: var(--text) !important;
+  background: transparent !important;
+}
+
+.el-input__inner::placeholder,
+.el-textarea__inner::placeholder {
+  color: var(--text-dim) !important;
+}
+
+/* 下拉面板、日期面板等弹层同样走深色 */
+.el-popper.is-light,
+.el-select-dropdown,
+.el-popper.is-light .el-popper__arrow::before {
+  background: #12121a !important;
+  border-color: var(--border) !important;
+}
+
+.el-select-dropdown__item {
+  color: var(--text) !important;
+}
+
+.el-select-dropdown__item.is-hovering {
+  background: rgba(56, 189, 248, .10) !important;
+}
+
+.el-select-dropdown__item.is-selected {
+  color: var(--accent) !important;
+}
+
+/* 分页、空状态、下拉箭头等零碎件跟着走深色 */
+.el-pagination,
+.el-pagination button,
+.el-pagination .el-pager li {
+  background: transparent !important;
+  color: var(--text-dim) !important;
+}
+
+.el-pagination .el-pager li.is-active {
+  color: var(--accent) !important;
+}
+
+.el-empty__description p {
+  color: var(--text-dim) !important;
+}
+
+.el-select__caret,
+.el-input__icon {
+  color: var(--text-dim) !important;
+}
+
+/* 复选框 / 开关：默认白块，改成深色主题 */
+.el-checkbox__inner {
+  background-color: rgba(9, 13, 22, .75) !important;
+  border-color: var(--border) !important;
+}
+
+.el-checkbox__input.is-checked .el-checkbox__inner,
+.el-checkbox__input.is-indeterminate .el-checkbox__inner {
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+.el-checkbox__label,
+.el-radio__label {
+  color: var(--text) !important;
+}
+
+.el-radio__inner {
+  background-color: rgba(9, 13, 22, .75) !important;
+  border-color: var(--border) !important;
+}
+
+.el-radio__input.is-checked .el-radio__inner {
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
 .el-table td.el-table__cell, .el-table th.el-table__cell.is-leaf {
   border-bottom: 1px solid var(--border) !important;
 }
