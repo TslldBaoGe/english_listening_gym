@@ -114,7 +114,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from '../utils/message'
 import api from '../api'
 import { useSettingsStore } from '../stores/settings'
@@ -128,7 +128,22 @@ const activeId = ref('')
 const pickedId = ref('')          // 下拉框选中的配置 id
 const editing = ref(false)        // 是否展开编辑表单
 const legacy = ref({})            // 旧的单条配置（列表为空时可一键导入）
-const form = reactive({ difficulty: 'L1', topic: 'daily life', voice: 'aria', rate: 1.0 })
+
+// 首帧同步恢复上次的表单值，进页面不会先显示硬编码默认再跳变
+const form = reactive((() => {
+  const fallback = { difficulty: 'L1', topic: 'daily life', voice: 'aria', rate: 1.0 }
+  try {
+    const c = JSON.parse(localStorage.getItem('el-settings-form-cache'))
+    return c && typeof c === 'object' ? { ...fallback, ...c } : fallback
+  } catch { return fallback }
+})())
+
+// 表单一有变化就写本地缓存（真正的保存仍走「保存」按钮 → 后端）
+watch(form, () => {
+  try { localStorage.setItem('el-settings-form-cache', JSON.stringify({ ...form })) } catch (e) { /* 忽略 */
+  }
+}, { deep: true })
+
 const llm = reactive({ id: '', name: '', provider: 'custom', base_url: '', api_key: '',
                        model: '' })
 const saving = ref(false)

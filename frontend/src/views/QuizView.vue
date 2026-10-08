@@ -129,10 +129,12 @@ const viewState = useViewState('el-quiz-state-v1',
     Object.assign(revealed, saved.revealed || {})
   })
 
+// 首帧同步恢复：进入页面直接就是上次的内容，不会先显示默认值再跳变
+viewState.restore()
+
 onMounted(async () => {
   difficulties.value = (await api.meta()).data.difficulties
   await store.load()
-  viewState.restore()
 })
 
 function clearAll() {

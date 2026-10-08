@@ -98,7 +98,10 @@ import { ElMessage, ElMessageBox } from '../utils/message'
 import SkyButton from '../components/SkyButton.vue'
 import api from '../api'
 
-const s = ref({})
+// 首帧同步恢复上次的数据，进页面数字不会先显示 0 再跳变；随后后台刷新最新值
+const s = ref((() => {
+  try { return JSON.parse(localStorage.getItem('el-stats-cache')) || {} } catch { return {} }
+})())
 const deleting = ref(0)
 
 const masteredPct = computed(() => {
@@ -121,6 +124,7 @@ function diffPct(n) {
 
 async function load() {
   s.value = (await api.stats()).data
+  try { localStorage.setItem('el-stats-cache', JSON.stringify(s.value)) } catch (e) { /* 忽略 */ }
 }
 
 onMounted(load)
