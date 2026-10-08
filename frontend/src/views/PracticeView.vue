@@ -83,11 +83,15 @@ const items = ref([])
 const revealed = reactive({})
 const generating = ref(false)
 
-// 只记住「已生成的句子」和数量：难度/主题/声音/语速 一律用 05 设置里的默认值，
-// 这样在设置页改了默认主题，回到这里立刻生效
+// 记住上次的一切：难度/主题/声音/数量/已生成的句子/展开状态。
+// 05 设置里的默认值只在第一次访问（还没有历史记录）时生效。
 const viewState = useViewState('el-practice-state-v1',
-  () => ({ count: form.count, items: items.value, revealed: { ...revealed } }),
+  () => ({ count: form.count, difficulty: form.difficulty, topic: form.topic,
+           voice: form.voice, items: items.value, revealed: { ...revealed } }),
   (saved) => {
+    if (saved.difficulty) form.difficulty = saved.difficulty
+    if (saved.topic) form.topic = saved.topic
+    if (saved.voice) form.voice = saved.voice
     if (saved.count) form.count = saved.count
     if (Array.isArray(saved.items)) items.value = saved.items
     Object.assign(revealed, saved.revealed || {})
