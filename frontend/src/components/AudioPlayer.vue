@@ -20,11 +20,14 @@
     </button>
 
     <div class="player-extra">
-      <button v-for="(r, i) in rates" :key="r" class="ctl rate-btn"
-              :class="{ active: localRate === r }" @click="setRate(r)">
-        <SkyBackdrop :delay="i * 1.3" />
-        <span class="ctl-inner mono">{{ r }}x</span>
-      </button>
+      <div class="rate-group">
+        <button v-for="(r, i) in rates" :key="r" class="ctl rate-btn"
+                :class="{ active: localRate === r, first: i === 0, last: i === rates.length - 1 }"
+                @click="setRate(r)">
+          <SkyBackdrop :delay="i * 1.3" />
+          <span class="ctl-inner mono">{{ r }}x</span>
+        </button>
+      </div>
       <LoopPill :model-value="loop" @update:model-value="$emit('update:loop', $event)" />
     </div>
     <span v-if="error" class="player-error">{{ error }}</span>
@@ -249,20 +252,40 @@ function setRate(r) {
   to { transform: rotate(360deg); }
 }
 
-/* 倍速键：同款夜空胶囊 */
-.rate-btn {
-  height: 30px;
-  min-width: 46px;
-  padding: 0 10px;
+/* 倍速键：连体分段控件——中间无缝相接，只保留一圈外轮廓 */
+.rate-group {
+  display: inline-flex;
+  align-items: stretch;
   border-radius: 999px;
-  font-size: 12px;
-  letter-spacing: .5px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(16, 22, 36, .92), rgba(9, 13, 22, .96));
 }
 
-.rate-btn.active {
+.rate-group .rate-btn {
+  border: none;
+  border-radius: 0;
+  height: 28px;
+  min-width: 48px;
+  padding: 0 10px;
+  font-size: 12px;
+  letter-spacing: .5px;
+  background: transparent;
+}
+
+.rate-group .rate-btn + .rate-btn {
+  border-left: 1px solid var(--border);
+}
+
+.rate-group .rate-btn.active {
   color: var(--accent);
-  border-color: rgba(56, 189, 248, .5);
-  box-shadow: inset 0 0 12px rgba(56, 189, 248, .12);
+  background: rgba(56, 189, 248, .12);
+  box-shadow: inset 0 0 12px rgba(56, 189, 248, .14);
+}
+
+.rate-group .rate-btn:hover {
+  color: var(--accent);
+  background: rgba(56, 189, 248, .07);
 }
 
 .player-error {
@@ -298,7 +321,7 @@ function setRate(r) {
     width: 26px;
     height: 26px;
   }
-  .rate-btn {
+  .rate-group .rate-btn {
     height: 38px;
     min-width: 58px;
     font-size: 13px;

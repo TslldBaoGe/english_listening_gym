@@ -8,7 +8,8 @@
       <el-form inline>
         <el-form-item label="难度">
           <el-select v-model="form.difficulty" clearable placeholder="不限" style="width:160px">
-            <el-option v-for="d in difficulties" :key="d.code" :label="d.code + ' ' + d.label" :value="d.code" />
+            <el-option v-for="d in difficulties" :key="d.code"
+              :label="`${d.code} ${d.label}（雅思 ${d.ielts} / ${d.cefr}）`" :value="d.code" />
           </el-select>
         </el-form-item>
         <el-form-item label="数量">
@@ -18,18 +19,18 @@
           <LoopPill :model-value="store.loop" @update:model-value="store.setLoop" />
         </el-form-item>
         <el-form-item>
-          <el-button class="glow-btn" type="primary" plain :loading="loading" @click="draw">抽取句子</el-button>
+          <SkyButton :loading="loading" :delay="0.4" @click="draw">抽取句子</SkyButton>
         </el-form-item>
         <el-form-item>
           <el-checkbox v-model="form.includeMastered">包含已掌握的</el-checkbox>
         </el-form-item>
         <el-form-item>
-          <el-button text style="color:var(--text-dim)" @click="clearAll">清空重来</el-button>
+          <SkyButton size="small" variant="ghost" @click="clearAll">清空重来</SkyButton>
         </el-form-item>
       </el-form>
       <div class="hint">
         玩法：点播放听句子 → 把你听到的句子打在下面的输入框里 → 回车提交。
-        <b>完全正确</b>的句子会被标记「已掌握」，以后抽题默认不再出现。
+        <span class="hl">完全正确</span>的句子会被标记「已掌握」，以后抽题默认不再出现。
       </div>
     </div>
 
@@ -49,8 +50,7 @@
         <el-input v-model="answers[s.id]" class="mono" style="flex:1"
                   placeholder="把你听到的句子打在这里，回车提交"
                   @keyup.enter="submit(s)" />
-        <el-button class="glow-btn" type="primary" plain :loading="checking === s.id"
-                   @click="submit(s)">提交</el-button>
+        <SkyButton :loading="checking === s.id" :delay="1.2" @click="submit(s)">提交</SkyButton>
       </div>
       <div class="hint">大小写和标点不影响判定，但要求逐词一致。</div>
 
@@ -78,19 +78,18 @@
               写错：{{ wrongDetail(s.id) }}</p>
           </template>
         </template>
-        <el-button v-else size="small" text style="color:var(--accent);padding-left:0;margin-top:4px"
-                   @click="revealed[s.id] = true">看答案（放弃这次）</el-button>
+        <SkyButton v-else size="small" variant="primary" style="margin-top:6px"
+                   @click="revealed[s.id] = true">看答案（放弃这次）</SkyButton>
       </div>
 
       <!-- 没作答时也可以直接看原文（等于放弃这次听写） -->
       <div v-else class="reveal-area" style="margin-top:12px">
-        <el-button v-if="!revealed[s.id]" size="small" text style="color:var(--text-dim)"
-                   @click="revealed[s.id] = true">看原文 / 翻译（放弃这次）</el-button>
+        <SkyButton v-if="!revealed[s.id]" size="small" variant="ghost" :delay="0.8"
+                   @click="revealed[s.id] = true">看原文 / 翻译（放弃这次）</SkyButton>
         <template v-else>
           <p class="mono" style="color:#e6edf3;font-size:16px">{{ s.text }}</p>
           <p style="color:var(--text-dim)">{{ s.translation }}</p>
-          <el-button size="small" text style="color:var(--text-dim)"
-                     @click="revealed[s.id] = false">藏起来</el-button>
+          <SkyButton size="small" variant="ghost" @click="revealed[s.id] = false">藏起来</SkyButton>
         </template>
       </div>
     </div>
@@ -103,6 +102,7 @@ import { ElMessage } from '../utils/message'
 import api from '../api'
 import AudioPlayer from '../components/AudioPlayer.vue'
 import LoopPill from '../components/LoopPill.vue'
+import SkyButton from '../components/SkyButton.vue'
 import { useSettingsStore } from '../stores/settings'
 import { useViewState } from '../composables/useViewState'
 
@@ -196,5 +196,6 @@ function wrongDetail(id) {
 
 <style scoped>
 .hint { color: var(--text-dim); font-size: 12px; line-height: 1.7; margin-top: 6px; }
-.hint b { color: #e6edf3; }
+.hint .hl { color: var(--accent); }
+.reveal-area .sky-button { margin-top: 8px; }
 </style>

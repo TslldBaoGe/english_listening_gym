@@ -67,6 +67,46 @@ html, body {
   background: transparent !important;
 }
 
+/* 所有实体按钮（默认/描边/危险）：深色玻璃底，不再出现白底白边 */
+.el-button:not(.is-text):not(.is-link) {
+  background-color: rgba(14, 19, 30, .9) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+.el-button:not(.is-text):not(.is-link):hover {
+  background-color: rgba(24, 33, 50, .95) !important;
+  border-color: rgba(56, 189, 248, .5) !important;
+  color: var(--accent) !important;
+}
+
+.el-button.is-plain,
+.el-button--primary.is-plain {
+  background-color: rgba(14, 19, 30, .9) !important;
+  border-color: rgba(56, 189, 248, .45) !important;
+  color: var(--accent) !important;
+}
+
+.el-button--danger.is-plain,
+.el-button--danger {
+  background-color: rgba(30, 16, 20, .9) !important;
+  border-color: rgba(245, 108, 108, .45) !important;
+  color: #f87171 !important;
+}
+
+.el-button.is-disabled,
+.el-button.is-disabled:hover {
+  background-color: rgba(14, 19, 30, .55) !important;
+  border-color: var(--border) !important;
+  color: var(--text-dim) !important;
+}
+
+/* 文字按钮保持无底，仅颜色跟随主题 */
+.el-button.is-text {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
 .glow-btn:hover {
   background: rgba(56, 189, 248, .08) !important;
   box-shadow: none;
@@ -78,16 +118,95 @@ html, body {
   color: var(--text) !important;
 }
 
-/* 输入框 / 下拉框 / 数字框：默认是白底浅灰边，这里统一成深色主题 */
+/* 输入框 / 下拉框 / 数字框：默认是白底浅灰边，这里统一成深色主题 + 星空动态底 */
 .el-input__wrapper,
 .el-textarea__inner,
 .el-select__wrapper,
-.el-input-number,
-.el-input-number__decrease,
-.el-input-number__increase {
+.el-input-number {
+  position: relative;
+  overflow: hidden;
   background-color: rgba(9, 13, 22, .75) !important;
   box-shadow: 0 0 0 1px var(--border) inset !important;
   color: var(--text) !important;
+}
+
+/* 星空层：两层星点缓慢闪烁 + 一颗流星偶尔划过（纯 CSS） */
+.el-input__wrapper::before,
+.el-textarea__inner::before,
+.el-select__wrapper::before,
+.el-input-number::before {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 12% 30%, rgba(255, 255, 255, .8), transparent),
+    radial-gradient(1px 1px at 68% 22%, rgba(186, 230, 253, .7), transparent),
+    radial-gradient(1.2px 1.2px at 38% 72%, rgba(216, 180, 254, .6), transparent),
+    radial-gradient(1px 1px at 86% 64%, rgba(255, 255, 255, .6), transparent);
+  animation: skyTwinkle 4.2s ease-in-out infinite alternate;
+  opacity: .55;
+  z-index: 0;
+}
+
+.el-input__wrapper::after,
+.el-textarea__inner::after,
+.el-select__wrapper::after,
+.el-input-number::after {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -60%;
+  width: 40%;
+  height: 1.5px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(186, 230, 253, .8));
+  transform: rotate(22deg);
+  opacity: 0;
+  animation: skyShoot 8.5s linear infinite;
+  z-index: 0;
+}
+
+@keyframes skyTwinkle {
+  from { opacity: .35; }
+  to   { opacity: .8; }
+}
+
+@keyframes skyShoot {
+  0%   { transform: translate3d(0, 0, 0) rotate(22deg); opacity: 0; }
+  5%   { opacity: .8; }
+  22%  { transform: translate3d(420%, 210%, 0) rotate(22deg); opacity: 0; }
+  100% { transform: translate3d(420%, 210%, 0) rotate(22deg); opacity: 0; }
+}
+
+/* 内容永远压在星空层之上 */
+.el-input__inner,
+.el-textarea__inner,
+.el-select__wrapper > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .el-input__wrapper::before, .el-input__wrapper::after,
+  .el-textarea__inner::before, .el-textarea__inner::after,
+  .el-select__wrapper::before, .el-select__wrapper::after,
+  .el-input-number::before, .el-input-number::after { animation: none; }
+}
+
+/* 数字框左右加减键：默认是白色实线，改成主题描边 */
+.el-input-number__decrease,
+.el-input-number__increase {
+  background: rgba(148, 163, 184, .07) !important;
+  color: var(--text-dim) !important;
+  border-color: var(--border) !important;
+  z-index: 2;
+}
+
+.el-input-number__decrease:hover,
+.el-input-number__increase:hover {
+  color: var(--accent) !important;
+  background: rgba(56, 189, 248, .12) !important;
 }
 
 .el-input__wrapper:hover,
@@ -367,21 +486,9 @@ html, body {
   .reveal-area {
     text-align: center;
   }
-  .reveal-area > .el-button:not(.is-text) {
+  .reveal-area .sky-button {
     min-width: 220px;
-  }
-  .reveal-area > .el-button.is-text {
-    min-width: 220px;
-    height: auto !important;
-    padding: 10px 18px;
-    line-height: 1.4;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: rgba(56, 189, 248, .06);
-  }
-  .reveal-area > .el-button.is-text:active {
-    border-color: var(--accent);
-    background: rgba(56, 189, 248, .14);
+    margin-top: 10px;
   }
   .answer-row {
     flex-wrap: wrap;
@@ -391,7 +498,7 @@ html, body {
   .answer-row .el-input {
     flex: 1 1 100% !important;
   }
-  .answer-row .el-button {
+  .answer-row .sky-button {
     min-width: 200px;
   }
 }

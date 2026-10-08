@@ -83,8 +83,8 @@
         </div>
         <span class="tag mono" style="color:var(--text-dim);border-color:var(--border)">
           {{ w.difficulty_code }}</span>
-        <el-button size="small" plain type="danger" :loading="deleting === w.id"
-                   @click="removeWrong(w)">移除</el-button>
+        <SkyButton size="small" variant="danger" :loading="deleting === w.id"
+                   :delay="0.5" @click="removeWrong(w)">移除</SkyButton>
       </div>
       <el-empty v-if="!(s.worst_sentences || []).length" description="还没有错题，继续加油"
                 :image-size="60" />
@@ -95,6 +95,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from '../utils/message'
+import SkyButton from '../components/SkyButton.vue'
 import api from '../api'
 
 const s = ref({})

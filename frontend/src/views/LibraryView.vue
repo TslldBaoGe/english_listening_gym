@@ -29,7 +29,7 @@
           <el-input v-model="q.keyword" placeholder="搜索英文" style="width:180px" @keyup.enter="search" />
         </el-form-item>
         <el-form-item>
-          <el-button class="glow-btn" plain @click="search">搜索</el-button>
+          <SkyButton size="small" variant="primary" :delay="0.3" @click="search">搜索</SkyButton>
         </el-form-item>
       </el-form>
     </div>
@@ -45,11 +45,11 @@
         <p style="color:var(--text-dim);margin:4px 0">{{ it.translation }}</p>
         <div style="display:flex;gap:10px;align-items:center">
           <AudioPlayer :sentence-id="it.id" :rate="1.0" />
-          <el-button v-if="it.mastered" text size="small" style="color:var(--accent)"
-                     @click="setMastered(it, false)">重新加入测验</el-button>
-          <el-button v-else text size="small" style="color:var(--text-dim)"
-                     @click="setMastered(it, true)">标记已掌握</el-button>
-          <el-button text type="danger" size="small" @click="del(it.id)">删除</el-button>
+          <SkyButton v-if="it.mastered" size="small" variant="ghost" :delay="0.6"
+                     @click="setMastered(it, false)">重新加入测验</SkyButton>
+          <SkyButton v-else size="small" variant="ghost" :delay="0.6"
+                     @click="setMastered(it, true)">标记已掌握</SkyButton>
+          <SkyButton size="small" variant="danger" @click="del(it.id)">删除</SkyButton>
         </div>
       </div>
       <el-pagination v-if="total > q.size" layout="prev, pager, next" :total="total"
@@ -64,6 +64,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from '../utils/message'
 import api from '../api'
 import AudioPlayer from '../components/AudioPlayer.vue'
+import SkyButton from '../components/SkyButton.vue'
 import { useViewState } from '../composables/useViewState'
 
 const difficulties = ref([])

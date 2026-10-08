@@ -17,8 +17,7 @@
             <el-select v-model="form.topic" style="width:180px" placeholder="下拉选择一个主题">
               <el-option v-for="t in topicOptions" :key="t" :label="t" :value="t" />
             </el-select>
-            <el-button plain style="color:var(--accent);border-color:var(--accent)"
-                       @click="addTopic">＋ 新增</el-button>
+            <SkyButton size="small" variant="ghost" @click="addTopic">＋ 新增</SkyButton>
           </div>
         </el-form-item>
         <el-form-item label="数量">
@@ -34,11 +33,10 @@
           <LoopPill :model-value="store.loop" @update:model-value="store.setLoop" />
         </el-form-item>
         <el-form-item>
-          <el-button class="glow-btn" type="primary" plain :loading="generating"
-                     @click="generate">生成并朗读</el-button>
+          <SkyButton :loading="generating" :delay="0.4" @click="generate">生成并朗读</SkyButton>
         </el-form-item>
         <el-form-item>
-          <el-button text style="color:var(--text-dim)" @click="clearAll">清空列表</el-button>
+          <SkyButton size="small" variant="ghost" @click="clearAll">清空列表</SkyButton>
         </el-form-item>
       </el-form>
       <div class="hint" style="margin-top:-6px">
@@ -56,11 +54,12 @@
       <AudioPlayer :sentence-id="s.id" :rate="store.rate" :loop="store.loop"
                    @update:loop="store.setLoop" />
       <div class="reveal-area" style="margin-top:14px">
-        <el-button v-if="!revealed[s.id]" size="small" text style="color:var(--accent)"
-                   @click="revealed[s.id] = true">显示原文 / 翻译</el-button>
+        <SkyButton v-if="!revealed[s.id]" size="small" variant="primary" :delay="0.8"
+                   @click="revealed[s.id] = true">显示原文 / 翻译</SkyButton>
         <template v-else>
           <p class="mono" style="color:#e6edf3;font-size:16px">{{ s.text }}</p>
           <p style="color:var(--text-dim)">{{ s.translation }}</p>
+          <SkyButton size="small" variant="ghost" @click="revealed[s.id] = false">隐藏原文 / 翻译</SkyButton>
         </template>
       </div>
     </div>
@@ -73,6 +72,7 @@ import { ElMessage, ElMessageBox } from '../utils/message'
 import api from '../api'
 import AudioPlayer from '../components/AudioPlayer.vue'
 import LoopPill from '../components/LoopPill.vue'
+import SkyButton from '../components/SkyButton.vue'
 import { useSettingsStore } from '../stores/settings'
 import { useViewState } from '../composables/useViewState'
 

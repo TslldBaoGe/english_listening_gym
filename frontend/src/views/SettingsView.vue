@@ -16,9 +16,8 @@
               <el-option v-for="c in configs" :key="c.id" :value="c.id"
                          :label="c.name + (c.id === activeId ? '　·　当前使用' : '')" />
             </el-select>
-            <el-button plain style="color:var(--accent);border-color:var(--accent)"
-                       @click="newConfig">＋ 新增</el-button>
-            <el-button v-if="pickedId" plain type="danger" @click="removeConfig">删除</el-button>
+            <SkyButton size="small" variant="ghost" @click="newConfig">＋ 新增</SkyButton>
+            <SkyButton v-if="pickedId" size="small" variant="danger" @click="removeConfig">删除</SkyButton>
           </div>
         </el-form-item>
 
@@ -46,16 +45,14 @@
               </el-select>
               <el-input v-else v-model="llm.model" class="mono" style="flex:1"
                         placeholder="glm-4-flash / gpt-4o-mini ... 或点击右侧获取" />
-              <el-button plain :loading="fetchingModels" style="color:var(--accent-2);border-color:var(--accent-2)"
-                         @click="fetchModels">获取模型</el-button>
+              <SkyButton :loading="fetchingModels" :delay="1.0" @click="fetchModels">获取模型</SkyButton>
             </div>
           </el-form-item>
           <el-form-item>
-            <el-button class="glow-btn" type="primary" plain :loading="saving" @click="saveLlm">
-              {{ llm.id ? '保存修改' : '新增配置' }}</el-button>
-            <el-button plain :loading="testing" style="color:var(--accent-2);border-color:var(--accent-2)"
-                       @click="testLlm">测试连接</el-button>
-            <el-button plain @click="cancelEdit">取消</el-button>
+            <SkyButton :loading="saving" :delay="0.4" @click="saveLlm">
+              {{ llm.id ? "保存修改" : "新增配置" }}</SkyButton>
+            <SkyButton variant="ghost" :loading="testing" :delay="1.4" @click="testLlm">测试连接</SkyButton>
+            <SkyButton size="small" variant="ghost" @click="cancelEdit">取消</SkyButton>
             <span v-if="testMsg" :style="{color: testOk ? 'var(--accent)' : '#f56c6c', marginLeft:'10px', fontSize:'13px'}">
               {{ testMsg }}</span>
           </el-form-item>
@@ -91,9 +88,8 @@
             <el-select v-model="form.topic" style="flex:1" placeholder="下拉选择一个主题">
               <el-option v-for="t in topicOptions" :key="t" :label="t" :value="t" />
             </el-select>
-            <el-button plain style="color:var(--accent);border-color:var(--accent)"
-                       @click="addTopic">＋ 新增</el-button>
-            <el-button v-if="canDeleteTopic" plain type="danger" @click="removeTopic">删除</el-button>
+            <SkyButton size="small" variant="ghost" @click="addTopic">＋ 新增</SkyButton>
+            <SkyButton v-if="canDeleteTopic" size="small" variant="danger" @click="removeTopic">删除</SkyButton>
           </div>
           <div class="cfg-hint">下拉里选中哪个，练习页默认就用哪个；主题可以自己新增、删除。</div>
         </el-form-item>
@@ -110,7 +106,7 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item>
-          <el-button class="glow-btn" type="primary" plain @click="saveDefaults">保存</el-button>
+          <SkyButton :delay="0.6" @click="saveDefaults">保存</SkyButton>
         </el-form-item>
       </el-form>
     </div>
@@ -122,6 +118,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from '../utils/message'
 import api from '../api'
 import { useSettingsStore } from '../stores/settings'
+import SkyButton from '../components/SkyButton.vue'
 
 const store = useSettingsStore()
 const difficulties = ref([])
