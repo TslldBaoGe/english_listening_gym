@@ -1,11 +1,11 @@
 <template>
   <div class="player">
-    <div class="player-main">
+    <div class="player-play">
       <el-button class="glow-btn play-btn" circle size="large" @click="play" :loading="loading">
         ▶
       </el-button>
-      <el-button class="replay-btn" text @click="restart">重播</el-button>
     </div>
+    <el-button class="replay-btn" text @click="restart">重播</el-button>
     <div class="player-extra">
       <el-radio-group v-model="localRate" size="small" @change="play">
         <el-radio-button v-for="r in [1.0, 0.85, 0.75, 0.5]" :key="r" :value="r"
@@ -124,7 +124,7 @@ function restart() {
 </script>
 
 <style scoped>
-/* 桌面：一行排开，和原来一致 */
+/* 桌面：一行排开：播放 · 重播 · 倍速 · 循环 */
 .player {
   display: flex;
   align-items: center;
@@ -132,15 +132,22 @@ function restart() {
   flex-wrap: wrap;
 }
 
-.player-main,
-.player-extra {
+.player-play {
   display: flex;
   align-items: center;
-  gap: 10px;
+  order: 1;
 }
 
 .replay-btn {
+  order: 2;
   color: var(--text-dim);
+}
+
+.player-extra {
+  order: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .player-error {
@@ -158,30 +165,36 @@ function restart() {
   background: rgba(56, 189, 248, .08);
 }
 
-/* 手机/窄屏：纵向居中成两行——大播放键一行，次要控件一行 */
+/* 手机/窄屏：竖排，播放键独占一行并居中 */
 @media (max-width: 720px) {
   .player {
     flex-direction: column;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
   }
-  .player-main {
-    gap: 16px;
+  .player-play {
+    order: 1;
   }
   .player-extra {
-    gap: 8px;
+    order: 2;
     justify-content: center;
     flex-wrap: wrap;
-    padding: 6px 10px;
+    gap: 8px;
+    padding: 6px 12px;
     border: 1px solid var(--border);
     border-radius: 999px;
     background: rgba(148, 163, 184, .04);
   }
+  .replay-btn {
+    order: 3;
+    font-size: 13px;
+  }
   .play-btn {
-    width: 58px !important;
-    height: 58px !important;
-    font-size: 22px !important;
+    width: 64px !important;
+    height: 64px !important;
+    font-size: 24px !important;
     padding: 0 !important;
+    box-shadow: 0 0 22px rgba(56, 189, 248, .28);
   }
   .player-error {
     text-align: center;
