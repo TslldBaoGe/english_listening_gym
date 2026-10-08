@@ -68,38 +68,34 @@
           </div>
         </el-form-item>
       </el-form>
-
-      <el-alert type="info" :closable="false" title="配置保存在本地数据库，仅本机使用"
-                description="下拉框选中哪条，练习/测验就用哪条；类型固定为「自定义（OpenAI 兼容）」，可随时新增、改名或删除。" />
     </div>
 
-    <!-- 练习默认参数 -->
-    <div class="card" style="max-width:560px">
+    <!-- 练习默认参数：布局与 01 练习页一致（横排 + 同款控件） -->
+    <div class="card">
       <div class="section-tag">练习默认参数</div>
-      <el-form label-width="110px">
-        <el-form-item label="默认难度">
-          <el-select v-touch-open v-model="form.difficulty">
+      <el-form inline>
+        <el-form-item label="难度">
+          <el-select v-touch-open v-model="form.difficulty" style="width:200px">
             <el-option v-for="d in difficulties" :key="d.code"
               :label="`${d.code} ${d.label}（雅思 ${d.ielts}）`" :value="d.code" />
           </el-select>
         </el-form-item>
-        <el-form-item label="默认主题">
-          <div style="display:flex;gap:8px;width:100%">
-            <el-select v-touch-open v-model="form.topic" style="flex:1" placeholder="下拉选择一个主题">
+        <el-form-item label="主题">
+          <div style="display:flex;gap:8px">
+            <el-select v-touch-open v-model="form.topic" style="width:180px" placeholder="下拉选择一个主题">
               <el-option v-for="t in topicOptions" :key="t" :label="t" :value="t" />
             </el-select>
             <SkyButton size="small" variant="ghost" @click="addTopic">＋ 新增</SkyButton>
             <SkyButton v-if="canDeleteTopic" size="small" variant="danger" @click="removeTopic">删除</SkyButton>
           </div>
-          <div class="cfg-hint">下拉里选中哪个，练习页默认就用哪个；主题可以自己新增、删除。</div>
         </el-form-item>
-        <el-form-item label="默认声音">
+        <el-form-item label="声音">
           <el-radio-group v-model="form.voice">
             <el-radio value="aria">Aria（女）</el-radio>
             <el-radio value="guy">Guy（男）</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="默认语速">
+        <el-form-item label="语速">
           <el-radio-group v-model="form.rate">
             <el-radio-button v-for="r in [1.0, 0.85, 0.75, 0.5]" :key="r" :value="r"
                              class="mono">{{ r }}x</el-radio-button>
@@ -109,6 +105,10 @@
           <SkyButton :delay="0.6" @click="saveDefaults">保存</SkyButton>
         </el-form-item>
       </el-form>
+      <div class="cfg-hint">
+        这里设置的是「第一次使用时的默认值」；练习页会记住你上次实际选择的条件。
+        主题与 01 练习共用同一份列表。
+      </div>
     </div>
   </div>
 </template>
