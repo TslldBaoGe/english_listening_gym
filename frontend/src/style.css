@@ -149,34 +149,9 @@ html, body {
   z-index: 0;
 }
 
-.el-input__wrapper::after,
-.el-textarea__inner::after,
-.el-select__wrapper::after,
-.el-input-number::after {
-  content: '';
-  position: absolute;
-  top: -60%;
-  left: -60%;
-  width: 40%;
-  height: 1.5px;
-  pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(186, 230, 253, .8));
-  transform: rotate(22deg);
-  opacity: 0;
-  animation: skyShoot 8.5s linear infinite;
-  z-index: 0;
-}
-
 @keyframes skyTwinkle {
   from { opacity: .35; }
   to   { opacity: .8; }
-}
-
-@keyframes skyShoot {
-  0%   { transform: translate3d(0, 0, 0) rotate(22deg); opacity: 0; }
-  5%   { opacity: .8; }
-  22%  { transform: translate3d(420%, 210%, 0) rotate(22deg); opacity: 0; }
-  100% { transform: translate3d(420%, 210%, 0) rotate(22deg); opacity: 0; }
 }
 
 /* 内容永远压在星空层之上 */
@@ -188,10 +163,10 @@ html, body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .el-input__wrapper::before, .el-input__wrapper::after,
-  .el-textarea__inner::before, .el-textarea__inner::after,
-  .el-select__wrapper::before, .el-select__wrapper::after,
-  .el-input-number::before, .el-input-number::after { animation: none; }
+  .el-input__wrapper::before,
+  .el-textarea__inner::before,
+  .el-select__wrapper::before,
+  .el-input-number::before { animation: none; }
 }
 
 /* 数字框左右加减键：默认是白色实线，改成主题描边 */

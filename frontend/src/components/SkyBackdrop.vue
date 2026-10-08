@@ -2,7 +2,6 @@
   <span class="sky" aria-hidden="true">
     <span class="sky-stars sky-stars-a"></span>
     <span class="sky-stars sky-stars-b"></span>
-    <span class="sky-shoot" :style="{ animationDelay: `${delay}s` }"></span>
   </span>
 </template>
 
@@ -63,27 +62,7 @@ defineProps({ delay: { type: Number, default: 0 } })
   to   { transform: translate3d(6%, 2%, 0); }
 }
 
-/* 流星：斜向下划过，大部分时间在休息 */
-.sky-shoot {
-  position: absolute;
-  top: -40%;
-  left: -50%;
-  width: 45%;
-  height: 1.5px;
-  background: linear-gradient(90deg, transparent, rgba(186, 230, 253, .9));
-  transform: rotate(24deg);
-  opacity: 0;
-  animation: shoot 7.5s linear infinite;
-}
-
-@keyframes shoot {
-  0%   { transform: translate3d(0, 0, 0) rotate(24deg); opacity: 0; }
-  6%   { opacity: .85; }
-  26%  { transform: translate3d(260%, 190%, 0) rotate(24deg); opacity: 0; }
-  100% { transform: translate3d(260%, 190%, 0) rotate(24deg); opacity: 0; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .sky-stars-a, .sky-stars-b, .sky-shoot { animation: none; }
+  .sky-stars-a, .sky-stars-b { animation: none; }
 }
 </style>
