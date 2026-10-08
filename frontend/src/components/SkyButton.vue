@@ -1,5 +1,5 @@
 <template>
-  <button class="sky-button" :class="[`v-${variant}`, `s-${size}`, { 'is-loading': loading }]"
+  <button type="button" class="sky-button" :class="[`v-${variant}`, `s-${size}`, { 'is-loading': loading }]"
           :disabled="disabled || loading" @click="$emit('click', $event)">
     <SkyBackdrop :delay="delay" />
     <span class="sb-inner">

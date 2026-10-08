@@ -1,6 +1,6 @@
 <template>
   <div class="player">
-    <button class="ctl play-btn" :class="{ playing }" @click="play"
+    <button type="button" class="ctl play-btn" :class="{ playing }" @click="play"
             :aria-label="playing ? '暂停' : '播放'">
       <SkyBackdrop :delay="0" />
       <span class="ctl-inner">
@@ -21,7 +21,7 @@
 
     <div class="player-extra">
       <div class="rate-group">
-        <button v-for="(r, i) in rates" :key="r" class="ctl rate-btn"
+        <button v-for="(r, i) in rates" :key="r" type="button" class="ctl rate-btn"
                 :class="{ active: localRate === r, first: i === 0, last: i === rates.length - 1 }"
                 @click="setRate(r)">
           <SkyBackdrop :delay="i * 1.3" />

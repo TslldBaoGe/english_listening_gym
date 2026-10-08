@@ -1,5 +1,5 @@
 <template>
-  <button class="loop-pill" :class="{ on: modelValue }" :aria-pressed="modelValue"
+  <button type="button" class="loop-pill" :class="{ on: modelValue }" :aria-pressed="modelValue"
           @click="$emit('update:modelValue', !modelValue)">
     <SkyBackdrop :delay="2.6" />
     <span class="loop-inner">
