@@ -252,8 +252,7 @@ html, body {
   color: var(--text-dim) !important;
 }
 
-/* 复选框 / 开关：默认白块，改成深色主题 */
-.el-checkbox__inner {
+/* 复选框 / 开关：默认白块，改成深色主题 */.el-checkbox__inner {
   background-color: rgba(9, 13, 22, .75) !important;
   border-color: var(--border) !important;
 }
@@ -476,4 +475,88 @@ html, body {
   .answer-row .sky-button {
     min-width: 200px;
   }
+}
+
+/* ── 弹出框 / 消息气泡：默认是白面板，统一成深色夜空玻璃，与整站一致 ── */
+.el-overlay {
+  background: rgba(2, 4, 10, .62) !important;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.el-message-box,
+.el-dialog {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border) !important;
+  border-radius: 16px !important;
+  background: linear-gradient(180deg, rgba(18, 24, 38, .98), rgba(9, 13, 22, .99)) !important;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .55),
+              inset 0 0 60px rgba(56, 189, 248, .04) !important;
+}
+
+/* 面板里同样铺一层安静的星点（与按钮同款，无流星扫线） */
+.el-message-box::before,
+.el-dialog::before {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 12% 30%, rgba(255, 255, 255, .75), transparent),
+    radial-gradient(1px 1px at 68% 20%, rgba(186, 230, 253, .65), transparent),
+    radial-gradient(1.2px 1.2px at 38% 74%, rgba(216, 180, 254, .55), transparent),
+    radial-gradient(1px 1px at 86% 66%, rgba(255, 255, 255, .55), transparent),
+    radial-gradient(1px 1px at 50% 50%, rgba(186, 230, 253, .45), transparent);
+  animation: skyTwinkle 5s ease-in-out infinite alternate;
+  opacity: .5;
+}
+
+.el-message-box > *,
+.el-dialog > * {
+  position: relative;
+  z-index: 1;
+}
+
+.el-message-box__title,
+.el-dialog__title {
+  color: #e6edf3 !important;
+  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  letter-spacing: 2px;
+}
+
+.el-message-box__content,
+.el-dialog__body {
+  color: var(--text) !important;
+}
+
+.el-message-box__btns .el-button {
+  min-width: 76px;
+}
+
+/* 顶部消息气泡：深底 + 主题色描边 */
+.el-message {
+  background: linear-gradient(180deg, rgba(18, 24, 38, .96), rgba(9, 13, 22, .98)) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .5) !important;
+  backdrop-filter: blur(8px);
+}
+
+.el-message .el-message__content {
+  color: var(--text) !important;
+}
+
+.el-message--success { border-color: rgba(56, 189, 248, .45) !important; }
+.el-message--success .el-message__content { color: var(--accent) !important; }
+
+.el-message--error { border-color: rgba(245, 108, 108, .5) !important; }
+.el-message--error .el-message__content { color: #f87171 !important; }
+
+.el-message--warning { border-color: rgba(230, 162, 60, .5) !important; }
+.el-message--warning .el-message__content { color: #e6a23c !important; }
+
+.el-message--info { border-color: var(--border) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .el-message-box::before, .el-dialog::before { animation: none; }
 }
