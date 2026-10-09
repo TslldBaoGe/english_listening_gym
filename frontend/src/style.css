@@ -6,6 +6,11 @@
   --accent-2: #a855f7;
   --text: #c9d1d9;
   --text-dim: #8b949e;
+  /* 正文强调 / 浅色强调 / 图表底槽：随主题切换 */
+  --text-strong: #e6edf3;
+  --accent-soft: #7dd3fc;
+  --track: rgba(255, 255, 255, .05);
+  --track-strong: rgba(255, 255, 255, .12);
   /* 悬浮导航栏距页面顶部的距离：改这一个值即可整体上下移动菜单栏 */
   --nav-gap: 20px;
 }
@@ -383,6 +388,18 @@ html, body {
   display: none;
 }
 
+/* 主题下拉：放在菜单右侧，样式与导航一致 */
+.theme-select {
+  width: 124px;
+  flex: 0 0 auto;
+}
+
+.theme-select .el-select__wrapper {
+  min-height: 30px;
+  border-radius: 999px;
+  font-size: 12.5px;
+}
+
 .nav-link {
   display: inline-flex;
   align-items: center;
@@ -560,7 +577,7 @@ html, body {
 
 .el-message-box__title,
 .el-dialog__title {
-  color: #e6edf3 !important;
+  color: var(--text-strong) !important;
   font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
   letter-spacing: 2px;
 }

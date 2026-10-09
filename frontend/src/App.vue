@@ -13,6 +13,10 @@
               <span class="nav-idx">{{ item.idx }}</span>{{ item.label }}
             </router-link>
           </div>
+          <el-select v-touch-open v-model="theme" class="theme-select" size="small"
+                     @change="setTheme">
+            <el-option v-for="t in themes" :key="t.value" :label="t.label" :value="t.value" />
+          </el-select>
         </div>
       </nav>
     </el-header>
@@ -23,6 +27,7 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import AnimatedBackground from './components/AnimatedBackground.vue'
 
 const navItems = [
@@ -32,4 +37,15 @@ const navItems = [
   { to: '/library', idx: '04', label: '知识库' },
   { to: '/settings', idx: '05', label: '设置' },
 ]
+
+const themes = [
+  { value: 'dark', label: '深空星夜' },
+  { value: 'light', label: '白天' },
+]
+const theme = ref(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark')
+
+function setTheme(v) {
+  document.documentElement.dataset.theme = v === 'light' ? 'light' : 'dark'
+  try { localStorage.setItem('el-theme', v) } catch (e) { /* 忽略 */ }
+}
 </script>

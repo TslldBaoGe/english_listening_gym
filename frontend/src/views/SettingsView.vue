@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <div class="section-tag">// 05 · SETTINGS</div>
-    <h2 style="color:#e6edf3;margin:0 0 20px">设置</h2>
+    <h2 style="color:var(--text-strong);margin:0 0 20px">设置</h2>
 
     <!-- 模型服务配置 -->
     <div class="card" style="max-width:680px;margin-bottom:20px">
@@ -365,5 +365,5 @@ async function removeTopic() {
 <style scoped>
 .cfg-hint { color: var(--text-dim); font-size: 12px; line-height: 1.8; margin-top: 2px; }
 .link { color: var(--accent); cursor: pointer; text-decoration: underline; }
-.link:hover { color: #7dd3fc; }
+.link:hover { color: var(--accent-soft); }
 </style>

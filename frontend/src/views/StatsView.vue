@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <div class="section-tag">// 03 · STATS</div>
-    <h2 style="color:#e6edf3;margin:0 0 20px">学习统计</h2>
+    <h2 style="color:var(--text-strong);margin:0 0 20px">学习统计</h2>
 
     <!-- 总览 -->
     <div class="grid">
@@ -12,7 +12,7 @@
       </div>
       <div class="card mono stat">
         <div class="stat-label">已掌握</div>
-        <div class="stat-num" style="color:#7dd3fc">
+        <div class="stat-num" style="color:var(--accent-soft)">
           {{ s.mastered_sentences || 0 }}<span class="stat-pct">{{ masteredPct }}%</span>
         </div>
         <div class="stat-sub">答对过，测验不再抽到</div>
@@ -55,7 +55,7 @@
       <div v-for="d in s.by_difficulty || []" :key="d.code" class="diff-row">
         <div class="diff-name">
           <span class="mono" style="color:var(--accent-2)">{{ d.code }}</span>
-          <span style="color:#e6edf3;margin-left:6px">{{ d.label || '—' }}</span>
+          <span style="color:var(--text-strong);margin-left:6px">{{ d.label || '—' }}</span>
           <span v-if="d.ielts" class="mono diff-ielts">IELTS {{ d.ielts }}</span>
         </div>
         <div class="diff-bar">
@@ -78,7 +78,7 @@
       <div v-for="w in s.worst_sentences || []" :key="w.id" class="wrong-row">
         <div class="wrong-badge mono">✗{{ w.wrong_count }}</div>
         <div class="wrong-text">
-          <div class="mono" style="color:#e6edf3;font-size:14px">{{ w.text }}</div>
+          <div class="mono" style="color:var(--text-strong);font-size:14px">{{ w.text }}</div>
           <div class="wrong-sub">{{ w.translation }}</div>
         </div>
         <span class="tag mono" style="color:var(--text-dim);border-color:var(--border)">
@@ -153,7 +153,7 @@ async function removeWrong(w) {
 }
 .stat { padding: 16px 18px; }
 .stat-label { color: var(--text-dim); font-size: 13px; letter-spacing: .5px; }
-.stat-num { font-size: 32px; line-height: 1.3; color: #e6edf3; }
+.stat-num { font-size: 32px; line-height: 1.3; color: var(--text-strong); }
 .stat-pct { font-size: 13px; color: var(--text-dim); margin-left: 6px; }
 .stat-sub { color: var(--text-dim); font-size: 12px; }
 
@@ -163,7 +163,7 @@ async function removeWrong(w) {
 .bar-num { font-size: 12px; color: var(--text-dim); height: 15px; }
 .bar-track {
   width: 100%; height: 88px; display: flex; align-items: flex-end;
-  background: rgba(255, 255, 255, .03); border: 1px solid transparent;
+  background: var(--track); border: 1px solid transparent;
   border-radius: 8px; overflow: hidden;
 }
 .bar-track.today { border-color: rgba(34, 211, 238, .45); }
@@ -172,7 +172,7 @@ async function removeWrong(w) {
   background: linear-gradient(180deg, var(--accent), rgba(34, 211, 238, .22));
   transition: height .3s ease;
 }
-.bar-fill.zero { background: rgba(255, 255, 255, .12); border-radius: 0; }
+.bar-fill.zero { background: var(--track-strong); border-radius: 0; }
 .bar-week { font-size: 12px; color: var(--text-dim); }
 .bar-date { font-size: 11px; color: var(--text-dim); opacity: .55; }
 
@@ -185,21 +185,21 @@ async function removeWrong(w) {
 .diff-name { width: 210px; font-size: 13px; flex-shrink: 0; }
 .diff-ielts { color: var(--text-dim); font-size: 11px; margin-left: 8px; }
 .diff-bar {
-  flex: 1; height: 8px; background: rgba(255, 255, 255, .05);
+  flex: 1; height: 8px; background: var(--track);
   border-radius: 999px; overflow: hidden; min-width: 60px;
 }
 .diff-fill {
   height: 100%; border-radius: 999px;
   background: linear-gradient(90deg, var(--accent-2), var(--accent));
 }
-.diff-count { width: 60px; text-align: right; color: #e6edf3; font-size: 13px; }
+.diff-count { width: 60px; text-align: right; color: var(--text-strong); font-size: 13px; }
 .diff-tags { width: 190px; display: flex; gap: 6px; justify-content: flex-end; }
 
 .tag {
   font-size: 11px; padding: 1px 7px; border-radius: 999px;
   border: 1px solid var(--border); white-space: nowrap;
 }
-.tag-ok { color: #7dd3fc; border-color: rgba(125, 211, 252, .4); }
+.tag-ok { color: var(--accent-soft); border-color: rgba(125, 211, 252, .4); }
 .tag-bad { color: #f56c6c; border-color: rgba(245, 108, 108, .4); }
 
 /* 错题 */

@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <div class="section-tag">// 04 · LIBRARY</div>
-    <h2 style="color:#e6edf3;margin:0 0 20px">知识库</h2>
+    <h2 style="color:var(--text-strong);margin:0 0 20px">知识库</h2>
 
     <div class="card" style="margin-bottom:16px">
       <el-form inline>
@@ -43,7 +43,7 @@
           {{ it.difficulty }} · {{ it.topic }} · 错{{ it.wrong_count }}/共{{ it.total_count }}
           <span v-if="it.mastered" class="mastered-tag">已掌握</span>
         </div>
-        <p class="mono" style="color:#e6edf3;margin:6px 0">{{ it.text }}</p>
+        <p class="mono" style="color:var(--text-strong);margin:6px 0">{{ it.text }}</p>
         <p style="color:var(--text-dim);margin:4px 0">{{ it.translation }}</p>
         <div style="display:flex;gap:10px;align-items:center">
           <AudioPlayer :sentence-id="it.id" :rate="1.0" />

@@ -57,7 +57,7 @@
         <SkyButton v-if="!revealed[s.id]" size="small" variant="primary" :delay="0.8"
                    @click="revealed[s.id] = true">显示原文 / 翻译</SkyButton>
         <template v-else>
-          <p class="mono" style="color:#e6edf3;font-size:16px">{{ s.text }}</p>
+          <p class="mono" style="color:var(--text-strong);font-size:16px">{{ s.text }}</p>
           <p style="color:var(--text-dim)">{{ s.translation }}</p>
           <SkyButton size="small" variant="ghost" @click="revealed[s.id] = false">隐藏原文 / 翻译</SkyButton>
         </template>

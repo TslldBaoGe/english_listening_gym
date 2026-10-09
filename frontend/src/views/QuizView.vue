@@ -65,7 +65,7 @@
 
         <!-- 原文/翻译：答对自动显示；答错要点「看答案」 -->
         <template v-if="results[s.id].correct || revealed[s.id]">
-          <p class="mono" style="color:#e6edf3;margin:10px 0 0">原文：{{ results[s.id].expected }}</p>
+          <p class="mono" style="color:var(--text-strong);margin:10px 0 0">原文：{{ results[s.id].expected }}</p>
           <p style="color:var(--text-dim);margin:4px 0 0">{{ results[s.id].translation }}</p>
           <template v-if="!results[s.id].correct">
             <p class="mono" style="margin:6px 0 0;line-height:1.9">
@@ -88,7 +88,7 @@
         <SkyButton v-if="!revealed[s.id]" size="small" variant="ghost" :delay="0.8"
                    @click="revealed[s.id] = true">看原文 / 翻译（放弃这次）</SkyButton>
         <template v-else>
-          <p class="mono" style="color:#e6edf3;font-size:16px">{{ s.text }}</p>
+          <p class="mono" style="color:var(--text-strong);font-size:16px">{{ s.text }}</p>
           <p style="color:var(--text-dim)">{{ s.translation }}</p>
           <SkyButton size="small" variant="ghost" @click="revealed[s.id] = false">藏起来</SkyButton>
         </template>
