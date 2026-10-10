@@ -9,6 +9,18 @@
     <div class="grid-floor"></div>
     <div class="scanline"></div>
     <div class="vignette"></div>
+
+    <!-- 白天主题的动态背景：飘云 + 光束 + 上浮光斑 -->
+    <div class="day-sky">
+      <div class="day-ray day-ray-1"></div>
+      <div class="day-ray day-ray-2"></div>
+      <div class="day-ray day-ray-3"></div>
+      <div class="day-bokeh"></div>
+      <div class="day-cloud day-cloud-1"></div>
+      <div class="day-cloud day-cloud-2"></div>
+      <div class="day-cloud day-cloud-3"></div>
+      <div class="day-cloud day-cloud-4"></div>
+    </div>
   </div>
 </template>
 
@@ -301,5 +313,78 @@ onBeforeUnmount(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .bg-glow, .grid-floor, .bg-aurora, .scanline { animation: none; }
+}
+
+/* ── 白天主题专属动态背景：飘云 + 摆动光束 + 上浮光斑 ──
+   默认隐藏，由 theme-light.css 在浅色主题下显示 */
+.day-sky {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: none;
+}
+
+/* 光束：从顶部斜洒下来的暖色阳光，缓慢摆动 */
+.day-ray {
+  position: absolute;
+  top: -14%;
+  width: 150px;
+  height: 130vh;
+  background: linear-gradient(180deg, rgba(255, 236, 170, .5), rgba(255, 244, 214, .16) 55%, transparent 85%);
+  filter: blur(18px);
+  transform-origin: top center;
+  opacity: 0;
+  animation: dayRaySway 17s ease-in-out infinite;
+}
+.day-ray-1 { left: 14%; }
+.day-ray-2 { left: 46%; width: 90px; animation-delay: -6s; }
+.day-ray-3 { left: 72%; width: 190px; animation-delay: -11.5s; }
+
+@keyframes dayRaySway {
+  0%, 100% { opacity: 0; transform: rotate(14deg); }
+  30%, 70% { opacity: .75; transform: rotate(20deg); }
+}
+
+/* 光斑：柔和的圆点缓缓上浮 */
+.day-bokeh {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(14px 14px at 18% 88%, rgba(2, 132, 199, .10), transparent),
+    radial-gradient(10px 10px at 42% 96%, rgba(124, 58, 237, .09), transparent),
+    radial-gradient(18px 18px at 66% 92%, rgba(56, 189, 248, .09), transparent),
+    radial-gradient(9px 9px at 84% 98%, rgba(236, 72, 153, .07), transparent);
+  animation: dayBokehFloat 22s linear infinite;
+}
+
+@keyframes dayBokehFloat {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(2%, -55vh, 0); opacity: 0; }
+}
+
+/* 云朵：白色柔边，缓慢横飘 */
+.day-cloud {
+  position: absolute;
+  height: 0;
+  border-radius: 999px;
+  background:
+    radial-gradient(closest-side at 30% 50%, rgba(255, 255, 255, .95), transparent),
+    radial-gradient(closest-side at 55% 40%, rgba(255, 255, 255, .9), transparent),
+    radial-gradient(closest-side at 75% 55%, rgba(244, 248, 255, .85), transparent);
+  filter: blur(4px);
+  animation: dayCloudDrift linear infinite;
+}
+.day-cloud-1 { top: 8%;  width: 380px; height: 110px; animation-duration: 95s;  opacity: .95; }
+.day-cloud-2 { top: 20%; width: 280px; height: 90px;  animation-duration: 120s; animation-delay: -40s; opacity: .85; }
+.day-cloud-3 { top: 42%; width: 460px; height: 130px; animation-duration: 150s; animation-delay: -90s; opacity: .7; }
+.day-cloud-4 { top: 62%; width: 240px; height: 80px;  animation-duration: 110s; animation-delay: -20s; opacity: .55; }
+
+@keyframes dayCloudDrift {
+  from { transform: translateX(-40vw); }
+  to   { transform: translateX(115vw); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .day-ray, .day-bokeh, .day-cloud { animation: none; }
 }
 </style>

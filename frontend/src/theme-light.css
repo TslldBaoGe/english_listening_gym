@@ -24,7 +24,7 @@ html[data-theme="light"] ::-webkit-scrollbar-thumb {
   border-radius: 6px;
 }
 
-/* 夜间特效在白天全部收起：星空、流星、透视网格、扫描线、暗角、动态光斑，背景保持静态 */
+/* 夜间特效在白天收起：星空、流星、透视网格、扫描线、暗角、动态光斑 */
 html[data-theme="light"] .bg-canvas,
 html[data-theme="light"] .grid-floor,
 html[data-theme="light"] .scanline,
@@ -32,6 +32,9 @@ html[data-theme="light"] .vignette,
 html[data-theme="light"] .bg-grid,
 html[data-theme="light"] .bg-glow,
 html[data-theme="light"] .bg-aurora { display: none; }
+
+/* 白天的动态背景：飘云 + 光束 + 上浮光斑 */
+html[data-theme="light"] .day-sky { display: block; }
 
 html[data-theme="light"] .bg-layer {
   background:
