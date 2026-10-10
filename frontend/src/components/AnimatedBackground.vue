@@ -15,7 +15,9 @@
       <div class="day-ray day-ray-1"></div>
       <div class="day-ray day-ray-2"></div>
       <div class="day-ray day-ray-3"></div>
-      <div class="day-bokeh"></div>
+      <div class="day-bokeh day-bokeh-a"></div>
+      <div class="day-bokeh day-bokeh-b"></div>
+      <div class="day-pollen"></div>
       <div class="day-cloud day-cloud-1"></div>
       <div class="day-cloud day-cloud-2"></div>
       <div class="day-cloud day-cloud-3"></div>
@@ -315,7 +317,8 @@ onBeforeUnmount(() => {
   .bg-glow, .grid-floor, .bg-aurora, .scanline { animation: none; }
 }
 
-/* ── 白天主题专属动态背景：飘云 + 摆动光束 + 上浮光斑 ──
+
+/* ── 白天主题专属动态背景：飘云 + 摆动光束 + 上浮光斑 + 飘絮 ──
    默认隐藏，由 theme-light.css 在浅色主题下显示 */
 .day-sky {
   position: absolute;
@@ -330,61 +333,98 @@ onBeforeUnmount(() => {
   top: -14%;
   width: 150px;
   height: 130vh;
-  background: linear-gradient(180deg, rgba(255, 236, 170, .5), rgba(255, 244, 214, .16) 55%, transparent 85%);
-  filter: blur(18px);
+  background: linear-gradient(180deg, rgba(255, 226, 140, .65), rgba(255, 240, 200, .22) 55%, transparent 85%);
+  filter: blur(16px);
   transform-origin: top center;
   opacity: 0;
-  animation: dayRaySway 17s ease-in-out infinite;
+  animation: dayRaySway 9s ease-in-out infinite;
 }
 .day-ray-1 { left: 14%; }
-.day-ray-2 { left: 46%; width: 90px; animation-delay: -6s; }
-.day-ray-3 { left: 72%; width: 190px; animation-delay: -11.5s; }
+.day-ray-2 { left: 46%; width: 90px; animation-delay: -3s; }
+.day-ray-3 { left: 72%; width: 190px; animation-delay: -6s; }
 
 @keyframes dayRaySway {
   0%, 100% { opacity: 0; transform: rotate(14deg); }
-  30%, 70% { opacity: .75; transform: rotate(20deg); }
+  30%, 70% { opacity: .95; transform: rotate(21deg); }
 }
 
-/* 光斑：柔和的圆点缓缓上浮 */
+/* 光斑：两批圆点错开上浮，保证任何时候都有在动的 */
 .day-bokeh {
   position: absolute;
   inset: 0;
+  background-repeat: no-repeat;
+}
+.day-bokeh-a {
   background-image:
-    radial-gradient(14px 14px at 18% 88%, rgba(2, 132, 199, .10), transparent),
-    radial-gradient(10px 10px at 42% 96%, rgba(124, 58, 237, .09), transparent),
-    radial-gradient(18px 18px at 66% 92%, rgba(56, 189, 248, .09), transparent),
-    radial-gradient(9px 9px at 84% 98%, rgba(236, 72, 153, .07), transparent);
-  animation: dayBokehFloat 22s linear infinite;
+    radial-gradient(16px 16px at 16% 96%, rgba(2, 132, 199, .22), transparent),
+    radial-gradient(11px 11px at 44% 100%, rgba(124, 58, 237, .18), transparent),
+    radial-gradient(20px 20px at 70% 98%, rgba(56, 189, 248, .16), transparent);
+  animation: dayBokehFloat 12s linear infinite;
+}
+.day-bokeh-b {
+  background-image:
+    radial-gradient(12px 12px at 30% 96%, rgba(236, 72, 153, .14), transparent),
+    radial-gradient(18px 18px at 58% 100%, rgba(2, 132, 199, .14), transparent),
+    radial-gradient(10px 10px at 86% 96%, rgba(124, 58, 237, .12), transparent);
+  animation: dayBokehFloat 12s linear infinite;
+  animation-delay: -6s;
 }
 
 @keyframes dayBokehFloat {
-  from { transform: translate3d(0, 0, 0); }
-  to   { transform: translate3d(2%, -55vh, 0); opacity: 0; }
+  0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+  12%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translate3d(3%, -70vh, 0); opacity: 0; }
 }
 
-/* 云朵：白色柔边，缓慢横飘 */
+/* 飘絮：细小的光点横向掠过，像被风带起的花粉 */
+.day-pollen {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-image:
+    radial-gradient(3px 3px at 0% 30%, rgba(2, 132, 199, .5), transparent),
+    radial-gradient(2.5px 2.5px at 0% 55%, rgba(124, 58, 237, .45), transparent),
+    radial-gradient(3.5px 3.5px at 0% 78%, rgba(56, 189, 248, .4), transparent),
+    radial-gradient(2px 2px at 0% 42%, rgba(236, 72, 153, .35), transparent);
+  animation: dayPollen 11s linear infinite;
+}
+
+@keyframes dayPollen {
+  0%   { transform: translate3d(-6%, 0, 0); opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { transform: translate3d(106vw, -4vh, 0); opacity: 0; }
+}
+
+/* 云朵：白色柔边，中速横飘 + 轻微上下起伏 */
 .day-cloud {
   position: absolute;
   height: 0;
   border-radius: 999px;
   background:
-    radial-gradient(closest-side at 30% 50%, rgba(255, 255, 255, .95), transparent),
-    radial-gradient(closest-side at 55% 40%, rgba(255, 255, 255, .9), transparent),
-    radial-gradient(closest-side at 75% 55%, rgba(244, 248, 255, .85), transparent);
-  filter: blur(4px);
-  animation: dayCloudDrift linear infinite;
+    radial-gradient(closest-side at 30% 50%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(closest-side at 55% 40%, rgba(255, 255, 255, .98), transparent),
+    radial-gradient(closest-side at 75% 55%, rgba(240, 246, 255, .95), transparent);
+  filter: blur(3px);
+  animation: dayCloudDrift linear infinite, dayCloudBob 7s ease-in-out infinite alternate;
 }
-.day-cloud-1 { top: 8%;  width: 380px; height: 110px; animation-duration: 95s;  opacity: .95; }
-.day-cloud-2 { top: 20%; width: 280px; height: 90px;  animation-duration: 120s; animation-delay: -40s; opacity: .85; }
-.day-cloud-3 { top: 42%; width: 460px; height: 130px; animation-duration: 150s; animation-delay: -90s; opacity: .7; }
-.day-cloud-4 { top: 62%; width: 240px; height: 80px;  animation-duration: 110s; animation-delay: -20s; opacity: .55; }
+.day-cloud-1 { top: 8%;  width: 420px; height: 120px; animation-duration: 38s, 6s;  opacity: 1; }
+.day-cloud-2 { top: 20%; width: 320px; height: 100px; animation-duration: 48s, 8s; animation-delay: -14s, -2s; opacity: .95; }
+.day-cloud-3 { top: 40%; width: 500px; height: 140px; animation-duration: 60s, 7s; animation-delay: -30s, -4s; opacity: .85; }
+.day-cloud-4 { top: 60%; width: 260px; height: 88px;  animation-duration: 44s, 9s; animation-delay: -8s, -1s; opacity: .75; }
 
 @keyframes dayCloudDrift {
-  from { transform: translateX(-40vw); }
+  from { transform: translateX(-45vw); }
   to   { transform: translateX(115vw); }
 }
 
+@keyframes dayCloudBob {
+  from { margin-top: 0; }
+  to   { margin-top: 18px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .day-ray, .day-bokeh, .day-cloud { animation: none; }
+  .day-ray, .day-bokeh, .day-pollen, .day-cloud { animation: none; }
 }
 </style>
