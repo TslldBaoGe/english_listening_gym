@@ -1,5 +1,6 @@
 <template>
   <div class="bg-layer" aria-hidden="true">
+    <!-- 夜间层：深空星夜 -->
     <div class="bg-glow bg-glow-1"></div>
     <div class="bg-glow bg-glow-2"></div>
     <div class="bg-glow bg-glow-3"></div>
@@ -10,25 +11,15 @@
     <div class="scanline"></div>
     <div class="vignette"></div>
 
-    <!-- 白天主题的动态背景：飘云 + 光束 + 上浮光斑 -->
-    <div class="day-sky">
-      <div class="day-ray day-ray-1"></div>
-      <div class="day-ray day-ray-2"></div>
-      <div class="day-ray day-ray-3"></div>
-      <div class="day-bokeh day-bokeh-a"></div>
-      <div class="day-bokeh day-bokeh-b"></div>
-      <div class="day-pollen"></div>
-      <div class="day-cloud day-cloud-1"></div>
-      <div class="day-cloud day-cloud-2"></div>
-      <div class="day-cloud day-cloud-3"></div>
-      <div class="day-cloud day-cloud-4"></div>
-    </div>
+    <!-- 白天层：白天（canvas 手绘晴空场景，仅浅色主题显示） -->
+    <canvas ref="dayCanvasRef" class="day-canvas"></canvas>
   </div>
 </template>
 
 <script setup>
 import { onMounted, onBeforeUnmount, ref } from 'vue'
 
+/* ═══════════ 夜间：星空 + 流星（保持原有体验） ═══════════ */
 const canvasRef = ref(null)
 let raf = 0
 let stars = []
@@ -62,6 +53,7 @@ function resize() {
   canvas.style.width = window.innerWidth + 'px'
   canvas.style.height = window.innerHeight + 'px'
   initStars()
+  resizeDay()
 }
 
 function initStars() {
@@ -78,7 +70,7 @@ function initStars() {
   }))
 }
 
-function tick() {
+function tick(now) {
   const canvas = canvasRef.value
   if (!ctx || !canvas) return
   ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -96,7 +88,6 @@ function tick() {
       ? `rgba(56, 189, 248, ${a})`
       : `rgba(200, 225, 255, ${a * 0.8})`
     ctx.fill()
-    // 拖尾：亮星带一条细尾迹
     if (s.r > 1.3 * dpr) {
       ctx.strokeStyle = s.green
         ? `rgba(56, 189, 248, ${a * 0.25})`
@@ -109,19 +100,17 @@ function tick() {
     }
   }
 
-  // 流星
-  const now = performance.now()
-  if (now >= nextMeteorAt && meteors.length < 3) spawnMeteor(now)
+  const t = performance.now()
+  if (t >= nextMeteorAt && meteors.length < 3) spawnMeteor(t)
   meteors = meteors.filter((m) => m.life < m.maxLife)
   for (const m of meteors) {
     m.life++
     m.x += m.vx
     m.y += m.vy
-    const t = m.life / m.maxLife
-    // 渐入渐出
-    const fade = Math.sin(Math.min(1, t) * Math.PI)
-    const nx = m.x - m.vx * (m.len / Math.hypot(m.vx, m.vy))
-    const ny = m.y - m.vy * (m.len / Math.hypot(m.vx, m.vy))
+    const fade = Math.sin(Math.min(1, m.life / m.maxLife) * Math.PI)
+    const len = Math.hypot(m.vx, m.vy)
+    const nx = m.x - m.vx * (m.len / len)
+    const ny = m.y - m.vy * (m.len / len)
     const grad = ctx.createLinearGradient(m.x, m.y, nx, ny)
     const head = m.green ? '56, 189, 248' : '190, 220, 255'
     grad.addColorStop(0, `rgba(255, 255, 255, ${0.9 * fade})`)
@@ -134,7 +123,6 @@ function tick() {
     ctx.moveTo(m.x, m.y)
     ctx.lineTo(nx, ny)
     ctx.stroke()
-    // 亮头部
     ctx.beginPath()
     ctx.arc(m.x, m.y, 1.6 * dpr, 0, Math.PI * 2)
     ctx.fillStyle = `rgba(255, 255, 255, ${0.85 * fade})`
@@ -143,33 +131,276 @@ function tick() {
   raf = requestAnimationFrame(tick)
 }
 
+/* ═══════════ 白天：晴空 + 太阳 + 视差云 + 鸟群 + 光尘 ═══════════ */
+const dayCanvasRef = ref(null)
+let dayCtx = null
+let dayRaf = 0
+let dayRunning = false
+let dayDpr = 1
+let dayW = 0
+let dayH = 0
+let clouds = []       // { sprite, x, y, w, h, speed, alpha }
+let birds = []        // { x, y, size, speed, dir, phase, flap }
+let motes = []        // { x, y, r, vy, wob, wobSpeed, alpha, hue }
+let sunSprite = null
+let lastTs = 0
+
+// 稳定的伪随机：同一场景每次刷新长得一致，不会乱跳
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+/** 预渲染一朵积云：多圆叠加 + 底部淡影，边缘柔和 */
+function makeCloudSprite(rnd, w, h) {
+  const c = document.createElement('canvas')
+  c.width = w * 2
+  c.height = h * 2
+  const g = c.getContext('2d')
+  g.scale(2, 2)
+  const puffs = 6 + Math.floor(rnd() * 3)
+  const baseY = h * 0.62
+  g.fillStyle = 'rgba(148, 178, 216, 0.30)'
+  g.beginPath()
+  g.ellipse(w * 0.5, baseY + h * 0.10, w * 0.36, h * 0.16, 0, 0, Math.PI * 2)
+  g.fill()
+  for (let i = 0; i < puffs; i++) {
+    const px = w * (0.14 + 0.72 * (i / (puffs - 1))) + (rnd() - 0.5) * w * 0.06
+    const pr = h * (0.26 + rnd() * 0.24) * (1 - Math.abs(i / (puffs - 1) - 0.5) * 0.7)
+    const py = baseY - pr * 0.55 - (i === Math.floor(puffs / 2) ? h * 0.14 : 0)
+    const grad = g.createRadialGradient(px, py - pr * 0.25, pr * 0.2, px, py, pr)
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.98)')
+    grad.addColorStop(1, 'rgba(244, 249, 255, 0.88)')
+    g.fillStyle = grad
+    g.beginPath()
+    g.arc(px, py, pr, 0, Math.PI * 2)
+    g.fill()
+  }
+  return c
+}
+
+/** 预渲染太阳：亮核 + 双层光晕 */
+function makeSunSprite(size) {
+  const c = document.createElement('canvas')
+  c.width = c.height = size * 2
+  const g = c.getContext('2d')
+  g.scale(2, 2)
+  const r = size / 2
+  const halo = g.createRadialGradient(r, r, r * 0.1, r, r, r)
+  halo.addColorStop(0, 'rgba(255, 252, 235, 0.95)')
+  halo.addColorStop(0.25, 'rgba(255, 238, 180, 0.55)')
+  halo.addColorStop(0.6, 'rgba(255, 224, 130, 0.16)')
+  halo.addColorStop(1, 'rgba(255, 224, 130, 0)')
+  g.fillStyle = halo
+  g.fillRect(0, 0, size, size)
+  return c
+}
+
+function buildDayScene() {
+  const rnd = mulberry32(20261011)
+  clouds = []
+  birds = []
+  motes = []
+  // 三层视差云：远（小而慢）→ 近（大而快）
+  const layers = [
+    { n: 3, w: [180, 260], h: [52, 76], speed: [7, 10], ys: [0.04, 0.30], alpha: 0.72 },
+    { n: 3, w: [280, 400], h: [80, 112], speed: [13, 17], ys: [0.10, 0.42], alpha: 0.88 },
+    { n: 3, w: [380, 540], h: [108, 150], speed: [20, 26], ys: [0.05, 0.38], alpha: 1 },
+  ]
+  for (const layer of layers) {
+    for (let i = 0; i < layer.n; i++) {
+      const w = layer.w[0] + rnd() * (layer.w[1] - layer.w[0])
+      const h = layer.h[0] + rnd() * (layer.h[1] - layer.h[0])
+      clouds.push({
+        sprite: makeCloudSprite(rnd, w, h),
+        w, h,
+        x: rnd() * dayW,
+        y: dayH * (layer.ys[0] + rnd() * (layer.ys[1] - layer.ys[0])),
+        speed: layer.speed[0] + rnd() * (layer.speed[1] - layer.speed[0]),
+        alpha: layer.alpha * (0.85 + rnd() * 0.15),
+      })
+    }
+  }
+  sunSprite = makeSunSprite(Math.min(300, dayW * 0.28))
+  for (let i = 0; i < 16; i++) {
+    motes.push({
+      x: rnd() * dayW,
+      y: rnd() * dayH,
+      r: 1.2 + rnd() * 2.6,
+      vy: 6 + rnd() * 10,
+      wob: rnd() * Math.PI * 2,
+      wobSpeed: 0.4 + rnd() * 0.8,
+      alpha: 0.12 + rnd() * 0.2,
+      hue: rnd() < 0.5 ? '2, 132, 199' : '124, 58, 237',
+    })
+  }
+}
+
+function resizeDay() {
+  const canvas = dayCanvasRef.value
+  if (!canvas) return
+  dayDpr = Math.min(window.devicePixelRatio || 1, 2)
+  dayW = window.innerWidth
+  dayH = window.innerHeight
+  canvas.width = dayW * dayDpr
+  canvas.height = dayH * dayDpr
+  canvas.style.width = dayW + 'px'
+  canvas.style.height = dayH + 'px'
+  dayCtx = canvas.getContext('2d')
+  dayCtx.setTransform(dayDpr, 0, 0, dayDpr, 0, 0)
+  buildDayScene()
+}
+
+function spawnBirds() {
+  const dir = Math.random() < 0.5 ? 1 : -1
+  const n = 3 + Math.floor(Math.random() * 3)
+  const y = dayH * (0.10 + Math.random() * 0.16)
+  const size = 7 + Math.random() * 5
+  for (let i = 0; i < n; i++) {
+    birds.push({
+      x: dir > 0 ? -40 - i * 26 - Math.random() * 20 : dayW + 40 + i * 26 + Math.random() * 20,
+      y: y + (Math.random() - 0.5) * 34,
+      size,
+      speed: (52 + Math.random() * 22) * dir,
+      dir,
+      phase: Math.random() * Math.PI * 2,
+      flap: 7 + Math.random() * 4,
+    })
+  }
+}
+
+function drawBird(g, b, ts) {
+  const flap = Math.sin(b.phase + ts * 0.001 * b.flap)
+  const wing = b.size * (0.55 + 0.35 * Math.sin(b.phase + ts * 0.001 * b.flap * 2))
+  g.strokeStyle = 'rgba(51, 65, 85, 0.78)'
+  g.lineWidth = Math.max(1.4, b.size * 0.16)
+  g.lineCap = 'round'
+  const x = b.x, y = b.y + Math.sin(ts * 0.0012 + b.phase) * 4
+  g.beginPath()
+  g.moveTo(x - b.size, y + wing * 0.35 * flap)
+  g.quadraticCurveTo(x - b.size * 0.4, y - wing * 0.5, x, y)
+  g.quadraticCurveTo(x + b.size * 0.4, y - wing * 0.5, x + b.size, y + wing * 0.35 * flap)
+  g.stroke()
+}
+
+function dayTick(ts) {
+  const g = dayCtx
+  if (!g) return
+  const dt = Math.min(0.05, (ts - lastTs) / 1000 || 0.016)
+  lastTs = ts
+  drawDayFrame(dt)
+}
+
+function drawDayFrame(dt) {
+  const g = dayCtx
+  if (!g) return
+
+  // 天空渐变
+  const sky = g.createLinearGradient(0, 0, 0, dayH)
+  sky.addColorStop(0, '#d8ecfb')
+  sky.addColorStop(0.45, '#eaf3fc')
+  sky.addColorStop(1, '#f6f9fd')
+  g.fillStyle = sky
+  g.fillRect(0, 0, dayW, dayH)
+
+  // 太阳（缓慢呼吸）
+  const sunX = dayW * 0.82, sunY = dayH * 0.14
+  const breathe = 1 + Math.sin(performance.now() * 0.0004) * 0.04
+  const sw = sunSprite.width / 2 * breathe
+  g.drawImage(sunSprite, sunX - sw / 2, sunY - sw / 2, sw, sw)
+
+  // 视差云
+  for (const c of clouds) {
+    c.x += c.speed * dt
+    if (c.x > dayW + c.w * 0.2) c.x = -c.w - 20
+    g.globalAlpha = c.alpha
+    g.drawImage(c.sprite, c.x, c.y, c.w, c.h)
+  }
+  g.globalAlpha = 1
+
+  // 鸟群：偶尔飞过一群
+  if (birds.length === 0 && Math.random() < dt * 0.06) spawnBirds()
+  birds = birds.filter((b) => b.x > -80 && b.x < dayW + 80)
+  for (const b of birds) {
+    b.x += b.speed * dt
+    drawBird(g, b, ts)
+  }
+
+  // 上浮光尘（左右轻摆）
+  for (const m of motes) {
+    m.y -= m.vy * dt
+    m.wob += m.wobSpeed * dt
+    if (m.y < -10) { m.y = dayH + 10; m.x = Math.random() * dayW }
+    const x = m.x + Math.sin(m.wob) * 18
+    g.beginPath()
+    g.arc(x, m.y, m.r, 0, Math.PI * 2)
+    g.fillStyle = `rgba(${m.hue}, ${m.alpha})`
+    g.fill()
+  }
+}
+
+function startDay() {
+  if (dayRunning || !dayCanvasRef.value) return
+  dayRunning = true
+  resizeDay()
+  lastTs = performance.now()
+  // 立即画第一帧：切到白天主题的瞬间场景就在（窗口无焦点/动画被挂起时也不空白）
+  dayTick(lastTs)
+  dayRaf = requestAnimationFrame(dayTick)
+}
+
+function stopDay() {
+  dayRunning = false
+  if (dayRaf) cancelAnimationFrame(dayRaf)
+  dayRaf = 0
+  const canvas = dayCanvasRef.value
+  if (canvas && dayCtx) dayCtx.clearRect(0, 0, canvas.width, canvas.height)
+}
+
+/* ═══════════ 主题切换：只在白天主题运行白天场景 ═══════════ */
+let themeObserver = null
+
+function currentTheme() {
+  return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'
+}
+
+function applyThemeLayers() {
+  if (currentTheme() === 'light') startDay()
+  else stopDay()
+}
+
 onMounted(() => {
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const canvas = canvasRef.value
   ctx = canvas.getContext('2d')
   resize()
-  nextMeteorAt = performance.now() + 1200
   window.addEventListener('resize', resize)
+  nextMeteorAt = performance.now() + 1200
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   if (!reduced) raf = requestAnimationFrame(tick)
-  else {
-    // 静态一帧
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    for (const s of stars) {
-      ctx.beginPath()
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2)
-      ctx.fillStyle = s.green
-        ? `rgba(56, 189, 248, ${s.alpha})`
-        : `rgba(200, 225, 255, ${s.alpha * 0.8})`
-      ctx.fill()
-    }
-  }
+
+  applyThemeLayers()
+  // 主题切换由 App.vue 直接改 data-theme，这里观察它来启停白天场景
+  themeObserver = new MutationObserver(applyThemeLayers)
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+  // 页面不可见时暂停白天场景，回来继续
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopDay()
+    else applyThemeLayers()
+  })
 })
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(raf)
+  stopDay()
   window.removeEventListener('resize', resize)
+  if (themeObserver) themeObserver.disconnect()
 })
 </script>
+
 
 <style scoped>
 .bg-layer {
@@ -180,14 +411,24 @@ onBeforeUnmount(() => {
   overflow: hidden;
   background:
     radial-gradient(ellipse 80% 50% at 50% -10%, rgba(56, 189, 248, 0.06), transparent 60%),
-    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(168, 85, 247, 0.05), transparent 60%),
     var(--bg);
 }
 
-.bg-canvas {
+.bg-canvas,
+.day-canvas {
   position: absolute;
   inset: 0;
 }
+
+.day-canvas { display: none; }
+html[data-theme="light"] .day-canvas { display: block; }
+html[data-theme="light"] .bg-canvas,
+html[data-theme="light"] .bg-glow,
+html[data-theme="light"] .bg-aurora,
+html[data-theme="light"] .bg-grid,
+html[data-theme="light"] .grid-floor,
+html[data-theme="light"] .scanline,
+html[data-theme="light"] .vignette { display: none; }
 
 .bg-grid {
   position: absolute;
@@ -198,69 +439,6 @@ onBeforeUnmount(() => {
   background-size: 44px 44px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(0,0,0,.7), transparent 75%);
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(0,0,0,.7), transparent 75%);
-}
-
-/* 仿参考站：透视网格地面，底部斜置并向上滚动 */
-.grid-floor {
-  position: absolute;
-  left: -50%;
-  bottom: -32vh;
-  width: 200%;
-  height: 60vh;
-  background-image:
-    linear-gradient(rgba(56, 189, 248, 0.10) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(56, 189, 248, 0.10) 1px, transparent 1px);
-  background-size: 64px 64px;
-  transform: perspective(420px) rotateX(64deg);
-  animation: gridScroll 2.4s linear infinite;
-  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,.85) 15%, transparent 80%);
-  mask-image: linear-gradient(to top, rgba(0,0,0,.85) 15%, transparent 80%);
-}
-
-@keyframes gridScroll {
-  from { background-position-y: 0; }
-  to   { background-position-y: 64px; }
-}
-
-/* 仿参考站：极光层（大块模糊流动光晕，高饱和） */
-.bg-aurora {
-  position: absolute;
-  inset: -8%;
-  filter: blur(60px) saturate(1.4);
-  opacity: 0.55;
-  background:
-    radial-gradient(ellipse 40% 30% at 20% 30%, rgba(56, 189, 248, 0.18), transparent 70%),
-    radial-gradient(ellipse 35% 28% at 75% 20%, rgba(168, 85, 247, 0.14), transparent 70%),
-    radial-gradient(ellipse 45% 32% at 55% 75%, rgba(56, 189, 248, 0.10), transparent 70%),
-    radial-gradient(ellipse 30% 25% at 30% 85%, rgba(244, 114, 182, 0.08), transparent 70%);
-  animation: auroraShift 18s ease-in-out infinite alternate;
-}
-
-@keyframes auroraShift {
-  from { transform: translateX(-3%) scale(1.02); }
-  to   { transform: translateX(3%) scale(1.08); }
-}
-
-/* 仿参考站：扫描线改为横扫，竖光带从左向右移动 */
-.scanline {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 140px;
-  background: linear-gradient(to right, transparent, rgba(56, 189, 248, 0.05), transparent);
-  animation: scanMove 9s linear infinite;
-}
-
-@keyframes scanMove {
-  from { left: -20%; }
-  to   { left: 120%; }
-}
-
-/* 仿参考站：暗角，聚焦画面中心 */
-.vignette {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 8, 0.65) 100%);
 }
 
 .bg-glow {
@@ -315,116 +493,5 @@ onBeforeUnmount(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .bg-glow, .grid-floor, .bg-aurora, .scanline { animation: none; }
-}
-
-
-/* ── 白天主题专属动态背景：飘云 + 摆动光束 + 上浮光斑 + 飘絮 ──
-   默认隐藏，由 theme-light.css 在浅色主题下显示 */
-.day-sky {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  display: none;
-}
-
-/* 光束：从顶部斜洒下来的暖色阳光，缓慢摆动 */
-.day-ray {
-  position: absolute;
-  top: -14%;
-  width: 150px;
-  height: 130vh;
-  background: linear-gradient(180deg, rgba(255, 226, 140, .65), rgba(255, 240, 200, .22) 55%, transparent 85%);
-  filter: blur(16px);
-  transform-origin: top center;
-  opacity: 0;
-  animation: dayRaySway 9s ease-in-out infinite;
-}
-.day-ray-1 { left: 14%; }
-.day-ray-2 { left: 46%; width: 90px; animation-delay: -3s; }
-.day-ray-3 { left: 72%; width: 190px; animation-delay: -6s; }
-
-@keyframes dayRaySway {
-  0%, 100% { opacity: 0; transform: rotate(14deg); }
-  30%, 70% { opacity: .95; transform: rotate(21deg); }
-}
-
-/* 光斑：两批圆点错开上浮，保证任何时候都有在动的 */
-.day-bokeh {
-  position: absolute;
-  inset: 0;
-  background-repeat: no-repeat;
-}
-.day-bokeh-a {
-  background-image:
-    radial-gradient(16px 16px at 16% 96%, rgba(2, 132, 199, .22), transparent),
-    radial-gradient(11px 11px at 44% 100%, rgba(124, 58, 237, .18), transparent),
-    radial-gradient(20px 20px at 70% 98%, rgba(56, 189, 248, .16), transparent);
-  animation: dayBokehFloat 12s linear infinite;
-}
-.day-bokeh-b {
-  background-image:
-    radial-gradient(12px 12px at 30% 96%, rgba(236, 72, 153, .14), transparent),
-    radial-gradient(18px 18px at 58% 100%, rgba(2, 132, 199, .14), transparent),
-    radial-gradient(10px 10px at 86% 96%, rgba(124, 58, 237, .12), transparent);
-  animation: dayBokehFloat 12s linear infinite;
-  animation-delay: -6s;
-}
-
-@keyframes dayBokehFloat {
-  0%   { transform: translate3d(0, 0, 0); opacity: 0; }
-  12%  { opacity: 1; }
-  85%  { opacity: 1; }
-  100% { transform: translate3d(3%, -70vh, 0); opacity: 0; }
-}
-
-/* 飘絮：细小的光点横向掠过，像被风带起的花粉 */
-.day-pollen {
-  position: absolute;
-  inset: 0;
-  background-repeat: no-repeat;
-  background-image:
-    radial-gradient(3px 3px at 0% 30%, rgba(2, 132, 199, .5), transparent),
-    radial-gradient(2.5px 2.5px at 0% 55%, rgba(124, 58, 237, .45), transparent),
-    radial-gradient(3.5px 3.5px at 0% 78%, rgba(56, 189, 248, .4), transparent),
-    radial-gradient(2px 2px at 0% 42%, rgba(236, 72, 153, .35), transparent);
-  animation: dayPollen 11s linear infinite;
-}
-
-@keyframes dayPollen {
-  0%   { transform: translate3d(-6%, 0, 0); opacity: 0; }
-  8%   { opacity: 1; }
-  92%  { opacity: 1; }
-  100% { transform: translate3d(106vw, -4vh, 0); opacity: 0; }
-}
-
-/* 云朵：白色柔边，中速横飘 + 轻微上下起伏 */
-.day-cloud {
-  position: absolute;
-  height: 0;
-  border-radius: 999px;
-  background:
-    radial-gradient(closest-side at 30% 50%, rgba(255, 255, 255, 1), transparent),
-    radial-gradient(closest-side at 55% 40%, rgba(255, 255, 255, .98), transparent),
-    radial-gradient(closest-side at 75% 55%, rgba(240, 246, 255, .95), transparent);
-  filter: blur(3px);
-  animation: dayCloudDrift linear infinite, dayCloudBob 7s ease-in-out infinite alternate;
-}
-.day-cloud-1 { top: 8%;  width: 420px; height: 120px; animation-duration: 38s, 6s;  opacity: 1; }
-.day-cloud-2 { top: 20%; width: 320px; height: 100px; animation-duration: 48s, 8s; animation-delay: -14s, -2s; opacity: .95; }
-.day-cloud-3 { top: 40%; width: 500px; height: 140px; animation-duration: 60s, 7s; animation-delay: -30s, -4s; opacity: .85; }
-.day-cloud-4 { top: 60%; width: 260px; height: 88px;  animation-duration: 44s, 9s; animation-delay: -8s, -1s; opacity: .75; }
-
-@keyframes dayCloudDrift {
-  from { transform: translateX(-45vw); }
-  to   { transform: translateX(115vw); }
-}
-
-@keyframes dayCloudBob {
-  from { margin-top: 0; }
-  to   { margin-top: 18px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .day-ray, .day-bokeh, .day-pollen, .day-cloud { animation: none; }
 }
 </style>

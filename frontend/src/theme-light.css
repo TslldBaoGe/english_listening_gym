@@ -33,8 +33,7 @@ html[data-theme="light"] .bg-grid,
 html[data-theme="light"] .bg-glow,
 html[data-theme="light"] .bg-aurora { display: none; }
 
-/* 白天的动态背景：飘云 + 光束 + 上浮光斑 */
-html[data-theme="light"] .day-sky { display: block; }
+/* 白天的动态背景由 AnimatedBackground 里的 day-canvas 自行显示 */
 
 html[data-theme="light"] .bg-layer {
   background:
