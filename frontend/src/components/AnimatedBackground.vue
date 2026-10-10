@@ -350,7 +350,12 @@ function startDay() {
   lastTs = performance.now()
   // 立即画第一帧：切到白天主题的瞬间场景就在（窗口无焦点/动画被挂起时也不空白）
   dayTick(lastTs)
-  dayRaf = requestAnimationFrame(dayTick)
+  const loop = (ts) => {
+    if (!dayRunning) return
+    dayTick(ts)
+    dayRaf = requestAnimationFrame(loop)
+  }
+  dayRaf = requestAnimationFrame(loop)
 }
 
 function stopDay() {
