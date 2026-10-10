@@ -133,6 +133,9 @@ function setRate(r) {
     if (before !== el && !before.paused) { before.pause(); release(before) }
   }
 }
+
+// 供外部触发播放（例如练习页「生成并朗读」后自动念第一句）
+defineExpose({ play })
 </script>
 
 

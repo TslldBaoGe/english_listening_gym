@@ -51,8 +51,8 @@
       <div class="mono" style="color:var(--accent-2);font-size:12px;margin-bottom:8px">
         {{ s.difficulty }} · {{ s.topic }} · #{{ s.id }}
       </div>
-      <AudioPlayer :sentence-id="s.id" :rate="store.rate" :loop="store.loop"
-                   @update:loop="store.setLoop" />
+      <AudioPlayer :ref="el => setPlayerRef(s.id, el)" :sentence-id="s.id" :rate="store.rate"
+                   :loop="store.loop" @update:loop="store.setLoop" />
       <div class="reveal-area" style="margin-top:14px">
         <SkyButton v-if="!revealed[s.id]" size="small" variant="primary" :delay="0.8"
                    @click="revealed[s.id] = true">显示原文 / 翻译</SkyButton>
@@ -67,7 +67,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, nextTick, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from '../utils/message'
 import api from '../api'
 import AudioPlayer from '../components/AudioPlayer.vue'
@@ -156,10 +156,26 @@ async function generate() {
     items.value = [...data.sentences, ...items.value]
     data.sentences.forEach(s => (revealed[s.id] = false))
     ElMessage.success(`已生成 ${data.sentences.length} 句并入库`)
+    // 按钮是「生成并朗读」：生成完直接把第一句念出来
+    autoplayFirst(data.sentences[0]?.id)
   } catch (e) {
     ElMessage.error(e.response?.data?.detail || '生成失败，请重试')
   } finally {
     generating.value = false
   }
+}
+
+// 卡片里的播放器实例，按句子 id 存起来，方便生成后自动播放
+const playerRefs = new Map()
+function setPlayerRef(id, el) {
+  if (el) playerRefs.set(id, el)
+  else playerRefs.delete(id)
+}
+
+/** 等新卡片渲染出来后，播放指定句子（浏览器若拦截，播放器会自己给出再点一次的提示） */
+async function autoplayFirst(id) {
+  if (!id) return
+  await nextTick()
+  playerRefs.get(id)?.play()
 }
 </script>
