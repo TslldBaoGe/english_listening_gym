@@ -38,6 +38,7 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import LoopPill from './LoopPill.vue'
 import SkyBackdrop from './SkyBackdrop.vue'
+import { getAudio, claim, release, setLoopAll } from '../utils/audioBus'
 
 const props = defineProps({
   sentenceId: Number,
@@ -52,40 +53,21 @@ const loading = ref(false)
 const playing = ref(false)
 const error = ref('')
 
-// 模块级缓存：同一个音频只下载/缓冲一次。重复点播放 = 直接从头出声，不再转圈。
-const CACHE_MAX = 40
-const cache = new Map()      // url -> HTMLAudioElement
-let current = null           // 当前在播的元素，切句时把它停掉
-
 // 设置是异步加载的，外部 rate 到位后同步到本地
 watch(() => props.rate, (r) => { localRate.value = Number(r) || 1.0 })
 
-// 循环开关一变，立刻同步到已缓存/正在播的音频
-watch(() => props.loop, (v) => {
-  cache.forEach(el => { el.loop = v })
-  if (current) current.loop = v
-}, { immediate: true })
+// 循环开关一变，立刻同步到全站已缓存/正在播的音频
+watch(() => props.loop, (v) => { setLoopAll(v) }, { immediate: true })
 
 function src() {
   return `/api/audio/${props.sentenceId}?rate=${localRate.value}`
 }
 
 function element() {
-  const u = src()
-  let el = cache.get(u)
-  if (!el) {
-    el = new Audio(u)
-    el.preload = 'auto'
-    el.loop = props.loop
-    el.onplaying = () => { loading.value = false; playing.value = true }
-    el.onpause = () => { playing.value = false }
-    el.onended = () => { playing.value = false }   // 循环时不会触发
-    cache.set(u, el)
-    if (cache.size > CACHE_MAX) {              // 超出上限就释放最旧的一个
-      const [oldU, oldEl] = cache.entries().next().value
-      if (oldEl !== current) { oldEl.src = ''; cache.delete(oldU) }
-    }
-  }
+  const el = getAudio(src(), props.loop)
+  el.onplaying = () => { loading.value = false; playing.value = true }
+  el.onpause = () => { playing.value = false }
+  el.onended = () => { playing.value = false }   // 循环时不会触发
   return el
 }
 
@@ -96,8 +78,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  const el = cache.get(src())
-  if (el && el === current) el.pause()
+  const el = getAudio(src(), props.loop)
+  if (el && !el.paused) { el.pause(); release(el) }
 })
 
 function blocked() {
@@ -107,17 +89,18 @@ function blocked() {
 
 function start(el) {
   el.currentTime = 0
+  // 认领全站播放权：这一句一响，其它卡片的声音立刻停
+  claim(el)
   // 关键：仍在用户手势里直接调用 play()，放到回调里会被 iOS Safari 拦截
   const p = el.play()
   if (p && typeof p.catch === 'function') p.catch(blocked)
 }
 
-function play() {  const el = element()
-  // 正在播同一句：再点就是暂停，不用重新走一遍加载
-  if (current === el && !el.paused && !el.ended) { el.pause(); return }
+function play() {
+  const el = element()
+  // 这句正在播：再点就是暂停
+  if (!el.paused && !el.ended) { el.pause(); release(el); return }
   error.value = ''
-  if (current && current !== el) current.pause()
-  current = el
   el.onerror = () => { loading.value = false; error.value = '音频加载失败' }
 
   // 已经缓冲好：立即出声，完全不显示转圈
@@ -128,25 +111,26 @@ function play() {  const el = element()
   }
   loading.value = true
   el.oncanplay = () => { loading.value = false }
-  el.onplaying = () => { loading.value = false }
   start(el)
 }
 
 /** 切倍速：换 URL 重新加载，保持播放位置与播放状态 */
 function setRate(r) {
   const wasPlaying = playing.value || loading.value
-  const at = current ? current.currentTime : 0
+  const before = element()
+  const at = before.currentTime
   localRate.value = r
   const el = element()
-  if (current && current !== el) current.pause()
-  current = el
   el.currentTime = at
   if (wasPlaying) {
     loading.value = true
+    claim(el)
     const p = el.play()
     if (p && typeof p.catch === 'function') p.catch(blocked)
   } else {
     loading.value = false
+    // 没在播也要把旧的占位元素停掉，避免它继续出声
+    if (before !== el && !before.paused) { before.pause(); release(before) }
   }
 }
 </script>
