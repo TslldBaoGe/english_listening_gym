@@ -46,7 +46,8 @@
         <p class="mono" style="color:var(--text-strong);margin:6px 0">{{ it.text }}</p>
         <p style="color:var(--text-dim);margin:4px 0">{{ it.translation }}</p>
         <div style="display:flex;gap:10px;align-items:center">
-          <AudioPlayer :sentence-id="it.id" :rate="1.0" />
+          <AudioPlayer :sentence-id="it.id" :rate="1.0" :loop="store.loop"
+                       @update:loop="store.setLoop" />
           <SkyButton v-if="it.mastered" size="small" variant="ghost" :delay="0.6"
                      @click="setMastered(it, false)">重新加入测验</SkyButton>
           <SkyButton v-else size="small" variant="ghost" :delay="0.6"
@@ -68,6 +69,9 @@ import api from '../api'
 import AudioPlayer from '../components/AudioPlayer.vue'
 import SkyButton from '../components/SkyButton.vue'
 import { useViewState } from '../composables/useViewState'
+import { useSettingsStore } from '../stores/settings'
+
+const store = useSettingsStore()
 
 // 首帧同步用缓存的难度配置，完整文案立刻可显示（后台再刷新）
 const difficulties = ref((() => {
