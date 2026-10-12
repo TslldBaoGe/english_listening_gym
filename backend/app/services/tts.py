@@ -1,73 +1,51 @@
-import time
-import wave
+import asyncio
 from pathlib import Path
-
-from piper import PiperVoice
-from piper.config import SynthesisConfig
-
-from app.config import AUDIO_DIR
-
-# 语音模型（离线，无需联网）：backend/data/piper/*.onnx
-MODEL_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "piper"
-
-# 前端声音 -> 模型文件（high 音质）
-VOICE_MODELS = {
-    "aria": "en_US-ljspeech-high.onnx",            # 女声
-    "guy": "en_US-ryan-high.onnx",                 # 男声
-    # 历史数据里存的是完整声音名，这里兼容
-    "en-US-AriaNeural": "en_US-ljspeech-high.onnx",
-    "en-US-GuyNeural": "en_US-ryan-high.onnx",
-}
-
-# 前端语速 -> piper length_scale（值越大念得越慢）
-LENGTH_SCALE = {1.0: 1.0, 0.85: 1.1, 0.75: 1.25, 0.5: 1.6}
-
-_voices = {}   # model_file -> PiperVoice（进程内各加载一次，约 1~2 秒）
+import edge_tts
+from app.config import AUDIO_DIR, VOICES, RATE_MAP, TTS_PROXY
 
 
-def _get_voice(voice_key: str) -> PiperVoice:
-    """惰性加载模型：每个声音整个后端进程只加载一次。"""
-    model_file = VOICE_MODELS.get(voice_key, VOICE_MODELS["aria"])
-    if model_file not in _voices:
-        _voices[model_file] = PiperVoice.load(str(MODEL_DIR / model_file))
-    return _voices[model_file]
-
-
-def audio_path(sentence_id: int, rate: float, voice_key: str = "aria") -> Path:
-    # 不同声音分开缓存，避免同句互顶
-    return AUDIO_DIR / f"{sentence_id}_{voice_key}_{rate}.wav"
+def audio_path(sentence_id: int, rate: float) -> Path:
+    return AUDIO_DIR / f"{sentence_id}_{rate}.mp3"
 
 
 def _is_valid(p: Path) -> bool:
-    return p.exists() and p.stat().st_size > 44   # 至少要有 wav 头
+    """有效缓存 = 文件存在且非空（edge-tts 失败时可能留下 0 字节文件）。"""
+    return p.exists() and p.stat().st_size > 0
+
+
+async def _synth(text: str, voice: str, rate_pct: str, out: Path, proxy: str | None):
+    await edge_tts.Communicate(text, voice, rate=rate_pct, proxy=proxy).save(str(out))
 
 
 def synthesize(sentence_id: int, text: str, voice_key: str = "aria", rate: float = 1.0) -> Path:
-    """本地离线合成 WAV。不联网，无配额，无审查。"""
-    voice_key = voice_key if voice_key in VOICE_MODELS else "aria"
-    out = audio_path(sentence_id, rate, voice_key)
+    """同步封装：合成并缓存 mp3。voice_key: aria/guy 或完整声音名。"""
+    voice = VOICES.get(voice_key, voice_key)
+    if voice not in VOICES.values():
+        voice = VOICES["aria"]
+    out = audio_path(sentence_id, rate)
+    # 空文件不算缓存成功，删掉重新合成
     if _is_valid(out):
         return out
     out.unlink(missing_ok=True)
-
-    t0 = time.time()
-    try:
-        length_scale = LENGTH_SCALE.get(rate, 1.0)
-        syn_config = SynthesisConfig(length_scale=length_scale)
-        # high 模型输出：22050Hz 单声道 16bit
-        with wave.open(str(out), "wb") as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)
-            wf.setframerate(22050)
-            _get_voice(voice_key).synthesize_wav(text, wf, syn_config=syn_config, set_wav_format=False)
-    except Exception:
-        out.unlink(missing_ok=True)
-        raise
-
-    if not _is_valid(out):
-        out.unlink(missing_ok=True)
-        raise RuntimeError("本地 TTS 产物为空")
-    return out
+    rate_pct = RATE_MAP.get(rate, "+0%")
+    proxy = TTS_PROXY or None
+    last_err: Exception | None = None
+    for attempt in range(3):
+        try:
+            asyncio.run(_synth(text, voice, rate_pct, out, proxy))
+            if _is_valid(out):
+                return out
+            # 合成"成功"但产物为空（网络中断常见），当作失败重试
+            out.unlink(missing_ok=True)
+            raise RuntimeError("TTS 返回了空音频")
+        except Exception as e:
+            out.unlink(missing_ok=True)
+            last_err = e
+            if attempt == 2:
+                break
+    raise RuntimeError(f"音频合成失败（{type(last_err).__name__}），"
+                       f"edge-tts 需要能访问微软服务；若提示 403 拦截，"
+                       f"请开启代理客户端并设置 TTS_PROXY 后重试")
 
 
 def remove_audio(sentence_id: int):
