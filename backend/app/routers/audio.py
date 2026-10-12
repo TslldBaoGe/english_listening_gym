@@ -19,8 +19,9 @@ def get_audio(sentence_id: int, rate: float = 1.0, db: Session = Depends(get_db)
     rate = rate if rate in ALLOWED_RATES else 1.0
     try:
         path = tts.synthesize(sentence_id, s.text, s.voice, rate)
-    except Exception:
-        raise HTTPException(502, "音频合成失败，请稍后重试")
+    except Exception as e:
+        # 透传真实原因（如"国内直连 edge-tts 被微软 403 拦截，请开启代理"）
+        raise HTTPException(502, str(e) or "音频合成失败，请稍后重试")
     # 音频按 句子id+语速 命名且生成后不再变化，让浏览器直接吃缓存，省掉每次重播的往返
     return FileResponse(path, media_type="audio/mpeg",
                         headers={"Cache-Control": "public, max-age=86400"})

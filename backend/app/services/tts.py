@@ -1,15 +1,20 @@
 import asyncio
 from pathlib import Path
 import edge_tts
-from app.config import AUDIO_DIR, VOICES, RATE_MAP
+from app.config import AUDIO_DIR, VOICES, RATE_MAP, TTS_PROXY
 
 
 def audio_path(sentence_id: int, rate: float) -> Path:
     return AUDIO_DIR / f"{sentence_id}_{rate}.mp3"
 
 
-async def _synth(text: str, voice: str, rate_pct: str, out: Path):
-    await edge_tts.Communicate(text, voice, rate=rate_pct).save(str(out))
+def _is_valid(p: Path) -> bool:
+    """有效缓存 = 文件存在且非空（edge-tts 失败时可能留下 0 字节文件）。"""
+    return p.exists() and p.stat().st_size > 0
+
+
+async def _synth(text: str, voice: str, rate_pct: str, out: Path, proxy: str | None):
+    await edge_tts.Communicate(text, voice, rate=rate_pct, proxy=proxy).save(str(out))
 
 
 def synthesize(sentence_id: int, text: str, voice_key: str = "aria", rate: float = 1.0) -> Path:
@@ -18,19 +23,25 @@ def synthesize(sentence_id: int, text: str, voice_key: str = "aria", rate: float
     if voice not in VOICES.values():
         voice = VOICES["aria"]
     out = audio_path(sentence_id, rate)
-    if out.exists():
+    # 空文件不算缓存成功，删掉重新合成
+    if _is_valid(out):
         return out
+    out.unlink(missing_ok=True)
     rate_pct = RATE_MAP.get(rate, "+0%")
+    last_err: Exception | None = None
     for attempt in range(3):
         try:
-            asyncio.run(_synth(text, voice, rate_pct, out))
-            return out
-        except Exception:
+            asyncio.run(_synth(text, voice, rate_pct, out, TTS_PROXY))
+            if _is_valid(out):
+                return out
+            # 合成"成功"但产物为空（网络中断常见），当作失败重试
+            out.unlink(missing_ok=True)
+            raise RuntimeError("TTS 返回了空音频")
+        except Exception as e:
+            out.unlink(missing_ok=True)
+            last_err = e
             if attempt == 2:
-                raise
-    return out
-
-
-def remove_audio(sentence_id: int):
-    for p in AUDIO_DIR.glob(f"{sentence_id}_*.mp3"):
-        p.unlink(missing_ok=True)
+                break
+    raise RuntimeError(f"音频合成失败（{type(last_err).__name__}），"
+                       f"国内直连 edge-tts 常被微软 403 拦截；"
+                       f"请开启代理客户端并确认 TTS_PROXY 配置正确后重试")

@@ -16,6 +16,10 @@ LLM_MODEL = os.getenv("LLM_MODEL", "glm-4-flash")
 DEFAULT_VOICE = "en-US-AriaNeural"
 VOICES = {"aria": "en-US-AriaNeural", "guy": "en-US-GuyNeural"}
 
+# TTS 代理（可选）：国内直连 edge-tts 常被微软 403，配置后走代理合成。
+# 优先级：环境变量 TTS_PROXY > 此处默认值。例：http://127.0.0.1:7892
+TTS_PROXY = os.getenv("TTS_PROXY", "http://127.0.0.1:7892")
+
 # 前端语速 -> edge-tts rate 百分比
 RATE_MAP = {1.0: "+0%", 0.85: "-15%", 0.75: "-25%", 0.5: "-50%"}
 
