@@ -75,6 +75,7 @@ import LoopPill from '../components/LoopPill.vue'
 import SkyButton from '../components/SkyButton.vue'
 import { useSettingsStore } from '../stores/settings'
 import { useViewState } from '../composables/useViewState'
+import { prewarm } from '../utils/audioBus'
 
 const store = useSettingsStore()
 // 首帧同步用缓存的难度配置，完整文案立刻可显示（后台再刷新）
@@ -148,6 +149,7 @@ async function addTopic() {
 }
 
 async function generate() {
+  prewarm()   // 在点击手势里同步解锁音频（iOS 等严格浏览器的自动播放策略）
   generating.value = true
   try {
     // 老数据里可能留着不在列表中的主题，顺手记进去（失败不影响生成）
@@ -176,6 +178,7 @@ function setPlayerRef(id, el) {
 async function autoplayFirst(id) {
   if (!id) return
   await nextTick()
+  window.__autoDbg = { id, found: playerRefs.has(id), hasPlay: typeof playerRefs.get(id)?.play }
   playerRefs.get(id)?.play()
 }
 </script>

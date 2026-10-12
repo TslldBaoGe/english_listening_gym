@@ -82,9 +82,19 @@ onBeforeUnmount(() => {
   if (el && !el.paused) { el.pause(); release(el) }
 })
 
-function blocked() {
+function blocked(el) {
   loading.value = false
-  error.value = '浏览器拦截了播放，请再点一次播放键'
+  error.value = '浏览器拦截了自动播放，随便点一下页面就开始朗读'
+  // 兜底：用户接下来点页面任何位置，都替他重试播放（一次性）
+  if (el) {
+    const retry = () => {
+      window.removeEventListener('pointerdown', retry)
+      claim(el)
+      const p = el.play()
+      if (p && typeof p.catch === 'function') p.catch(() => {})
+    }
+    window.addEventListener('pointerdown', retry, { once: true, capture: true })
+  }
 }
 
 function start(el) {
@@ -93,7 +103,17 @@ function start(el) {
   claim(el)
   // 关键：仍在用户手势里直接调用 play()，放到回调里会被 iOS Safari 拦截
   const p = el.play()
-  if (p && typeof p.catch === 'function') p.catch(blocked)
+  if (p && typeof p.catch === 'function') {
+    p.catch(() => {
+      if (el.error) {
+        // 音源问题（如后端 TTS 合成失败），不是自动播放拦截
+        loading.value = false
+        error.value = '音频加载失败：后端合成出错（若提示代理/网络，请先开启代理客户端再重试）'
+      } else {
+        blocked(el)
+      }
+    })
+  }
 }
 
 function play() {
@@ -126,7 +146,7 @@ function setRate(r) {
     loading.value = true
     claim(el)
     const p = el.play()
-    if (p && typeof p.catch === 'function') p.catch(blocked)
+    if (p && typeof p.catch === 'function') p.catch(() => blocked(el))
   } else {
     loading.value = false
     // 没在播也要把旧的占位元素停掉，避免它继续出声

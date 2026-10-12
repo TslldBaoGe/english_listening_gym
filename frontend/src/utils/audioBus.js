@@ -49,3 +49,30 @@ export function setLoopAll(v) {
 export function currentAudio() {
   return current
 }
+
+/**
+ * 音频解锁：在用户手势里同步播一小段静音，把浏览器的自动播放权限"热"出来。
+ * iOS Safari 等严格浏览器要求首次 play() 必须在手势内，异步调用会被拦。
+ */
+let unlockedEl = null
+function silentWavUrl() {
+  const sr = 8000, n = sr / 4
+  const buf = new ArrayBuffer(44 + n * 2)
+  const v = new DataView(buf)
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)) }
+  w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE')
+  w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true)
+  v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true)
+  w(36, 'data'); v.setUint32(40, n * 2, true)
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }))
+}
+
+export function prewarm() {
+  try {
+    if (!unlockedEl) unlockedEl = new Audio()
+    unlockedEl.src = silentWavUrl()
+    unlockedEl.volume = 1
+    const p = unlockedEl.play()
+    if (p && typeof p.catch === 'function') p.catch(() => { /* 静音解锁失败就靠用户再点 */ })
+  } catch (e) { /* 忽略 */ }
+}
