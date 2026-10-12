@@ -45,3 +45,8 @@ def synthesize(sentence_id: int, text: str, voice_key: str = "aria", rate: float
     raise RuntimeError(f"音频合成失败（{type(last_err).__name__}），"
                        f"国内直连 edge-tts 常被微软 403 拦截；"
                        f"请开启代理客户端并确认 TTS_PROXY 配置正确后重试")
+
+
+def remove_audio(sentence_id: int):
+    for p in AUDIO_DIR.glob(f"{sentence_id}_*.mp3"):
+        p.unlink(missing_ok=True)
