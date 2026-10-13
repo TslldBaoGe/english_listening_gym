@@ -3,6 +3,9 @@ import time
 import wave
 from pathlib import Path
 
+import numpy as np
+import soundfile as sf
+
 from app.config import AUDIO_DIR
 
 # TTS 提供方：kokoro（本地离线，默认）| edge（微软云端，需可直连或开代理）
@@ -115,7 +118,26 @@ def synthesize(sentence_id: int, text: str, voice_key: str = "aria", rate: float
     if not _is_valid(out):
         out.unlink(missing_ok=True)
         raise RuntimeError("TTS 产物为空")
+    _normalize_loudness(out)
     return out
+
+
+def _normalize_loudness(p: Path):
+    """响度归一：峰值提到约 -1 dBFS，RMS 不足再补偿，让每句音量一致且够响。"""
+    data, sr = sf.read(str(p))
+    if data.size == 0:
+        return
+    data = data.astype('float64')
+    peak = float(np.max(np.abs(data)))
+    if peak < 1e-4:
+        return
+    gain = 0.89 / peak                                   # 峰值 -1 dBFS
+    rms = float(np.sqrt(np.mean(data ** 2)))
+    if rms * gain < 0.10:                                # 响度不足（约 -20 dBFS）则补
+        gain = min(0.10 / max(rms, 1e-6), 6.0)
+    gain = min(gain, 8.0)
+    out_data = np.clip(data * gain, -1.0, 1.0)
+    sf.write(str(p), out_data, sr)
 
 
 def remove_audio(sentence_id: int):

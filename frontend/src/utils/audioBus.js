@@ -76,3 +76,21 @@ export function prewarm() {
     if (p && typeof p.catch === 'function') p.catch(() => { /* 静音解锁失败就靠用户再点 */ })
   } catch (e) { /* 忽略 */ }
 }
+
+/**
+ * 共享的 WebAudio 上下文：给播放器做软件增益用。
+ * 必须在用户手势里创建/恢复；返回 null 表示当前环境不允许（此时走原生音量）。
+ */
+export function ensureAudioContext() {
+  try {
+    if (!window.__elAudioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext
+      if (!AC) return null
+      window.__elAudioCtx = new AC()
+    }
+    if (window.__elAudioCtx.state === 'suspended') window.__elAudioCtx.resume()
+    return window.__elAudioCtx.state === 'running' ? window.__elAudioCtx : window.__elAudioCtx
+  } catch (e) {
+    return null
+  }
+}
