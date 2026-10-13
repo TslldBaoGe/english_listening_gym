@@ -24,7 +24,7 @@
           <el-input-number v-model="form.count" :min="1" :max="3" />
         </el-form-item>
         <el-form-item label="声音">
-          <el-select v-model="form.voice" style="width:180px" class="mono">
+          <el-select v-touch-open v-model="form.voice" style="width:180px" class="mono">
             <el-option v-for="v in VOICE_OPTIONS" :key="v.value" :label="v.label" :value="v.value" />
           </el-select>
         </el-form-item>
@@ -95,7 +95,7 @@ const viewState = useViewState('el-practice-state-v1',
   (saved) => {
     if (saved.difficulty) form.difficulty = saved.difficulty
     if (saved.topic) form.topic = saved.topic
-    if (saved.voice) form.voice = saved.voice
+    if (saved.voice) form.voice = normalizeVoice(saved.voice)
     if (saved.count) form.count = saved.count
     if (Array.isArray(saved.items)) items.value = saved.items
     Object.assign(revealed, saved.revealed || {})
