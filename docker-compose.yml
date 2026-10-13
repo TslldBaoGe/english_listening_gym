@@ -11,8 +11,6 @@ services:
       - english_listening_data:/app/data
     environment:
       - LLM_MODEL=${LLM_MODEL:-glm-4-flash}
-      # 服务器部署用 edge-tts（境外服务器可直连微软）；本地开发默认 kokoro 离线
-      - TTS_PROVIDER=edge
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/meta"]
