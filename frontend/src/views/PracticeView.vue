@@ -155,11 +155,14 @@ async function generate() {
     // 老数据里可能留着不在列表中的主题，顺手记进去（失败不影响生成）
     try { await store.rememberTopic(form.topic) } catch (e) { /* 忽略 */ }
     const { data } = await api.generate(form)
-    items.value = [...data.sentences, ...items.value]
-    data.sentences.forEach(s => (revealed[s.id] = false))
-    ElMessage.success(`已生成 ${data.sentences.length} 句并入库`)
+    // 去重：删过的句子 id 可能被数据库复用，避免列表出现重复卡片
+    const seen = new Set(items.value.map(s => s.id))
+    const fresh = data.sentences.filter(s => !seen.has(s.id) && seen.add(s.id))
+    items.value = [...fresh, ...items.value]
+    fresh.forEach(s => (revealed[s.id] = false))
+    ElMessage.success(`已生成 ${fresh.length} 句并入库`)
     // 按钮是「生成并朗读」：生成完直接把第一句念出来
-    autoplayFirst(data.sentences[0]?.id)
+    autoplayFirst(fresh[0]?.id)
   } catch (e) {
     ElMessage.error(e.response?.data?.detail || '生成失败，请重试')
   } finally {
