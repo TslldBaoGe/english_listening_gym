@@ -24,10 +24,9 @@
           <el-input-number v-model="form.count" :min="1" :max="3" />
         </el-form-item>
         <el-form-item label="声音">
-          <el-radio-group v-model="form.voice">
-            <el-radio value="aria">Aria（女）</el-radio>
-            <el-radio value="guy">Guy（男）</el-radio>
-          </el-radio-group>
+          <el-select v-model="form.voice" style="width:180px" class="mono">
+            <el-option v-for="v in VOICE_OPTIONS" :key="v.value" :label="v.label" :value="v.value" />
+          </el-select>
         </el-form-item>
         <el-form-item label="循环">
           <LoopPill :model-value="store.loop" @update:model-value="store.setLoop" />
@@ -76,13 +75,14 @@ import SkyButton from '../components/SkyButton.vue'
 import { useSettingsStore } from '../stores/settings'
 import { useViewState } from '../composables/useViewState'
 import { prewarm } from '../utils/audioBus'
+import { VOICE_OPTIONS, normalizeVoice } from '../utils/voices'
 
 const store = useSettingsStore()
 // 首帧同步用缓存的难度配置，完整文案立刻可显示（后台再刷新）
 const difficulties = ref((() => {
   try { return JSON.parse(localStorage.getItem('el-meta-cache'))?.difficulties || [] } catch { return [] }
 })())
-const form = reactive({ difficulty: 'L1', topic: 'daily life', count: 1, voice: 'aria' })
+const form = reactive({ difficulty: 'L1', topic: 'daily life', count: 1, voice: 'af_heart' })
 const items = ref([])
 const revealed = reactive({})
 const generating = ref(false)
@@ -111,7 +111,7 @@ onMounted(async () => {
   await store.load()
   // 没有历史记录（第一次用）才用设置页的默认值
   if (!hasHistory) {
-    Object.assign(form, { difficulty: store.difficulty, topic: store.topic, voice: store.voice })
+    Object.assign(form, { difficulty: store.difficulty, topic: store.topic, voice: normalizeVoice(store.voice) })
   }
 })
 

@@ -7,7 +7,7 @@ from app.db.models import Sentence
 from app.db import vector_store
 from app.services import llm, tts
 from app.services.text_utils import similarity
-from app.config import DUP_DISTANCE, DUP_TEXT_SIM, VOICES
+from app.config import DUP_DISTANCE, DUP_TEXT_SIM, KNOWN_VOICES
 
 router = APIRouter(prefix="/api/sentences", tags=["sentences"])
 
@@ -55,7 +55,7 @@ def generate(body: GenerateIn, db: Session = Depends(get_db)):
                 continue
             s = Sentence(text=text, translation=str(it.get("translation", "")),
                          difficulty_code=body.difficulty, topic=body.topic,
-                         voice=VOICES.get(body.voice, VOICES["aria"]))
+                         voice=(body.voice if body.voice in KNOWN_VOICES else "af_heart"))
             db.add(s)
             db.commit()
             vector_store.add(s.id, s.text, s.difficulty_code, s.topic)

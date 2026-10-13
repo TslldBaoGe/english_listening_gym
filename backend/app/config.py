@@ -20,6 +20,12 @@ VOICES = {"aria": "en-US-AriaNeural", "guy": "en-US-GuyNeural"}
 # 留空 = 直连。例：http://127.0.0.1:7892。也可用环境变量 TTS_PROXY 覆盖。
 TTS_PROXY = os.getenv("TTS_PROXY", "")
 
+
+# 网站可选的全部女声音色（kokoro）：前端下拉与后端校验共用这份名单
+KNOWN_VOICES = ["af_heart", "af_bella", "af_nicole", "af_aoede", "af_kore", "af_sarah",
+                "af_nova", "af_sky", "af_alloy", "af_jessica", "af_river",
+                "bf_emma", "bf_isabella", "bf_alice", "bf_lily"]
+
 # 前端语速 -> edge-tts rate 百分比
 RATE_MAP = {1.0: "+0%", 0.85: "-15%", 0.75: "-25%", 0.5: "-50%"}
 

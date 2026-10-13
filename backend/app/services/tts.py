@@ -14,12 +14,35 @@ MODEL_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "kokoro"
 KOKORO_MODEL = MODEL_DIR / "kokoro-v1_0.pth"
 KOKORO_CONFIG = MODEL_DIR / "config.json"
 KOKORO_VOICES = {
-    "aria": MODEL_DIR / "voices" / "af_heart.pt",      # 女声
-    "guy": MODEL_DIR / "voices" / "am_michael.pt",     # 男声
-    # 历史数据里存的是完整声音名，这里兼容
+    # 全部女声音色（前端下拉可选）
+    "af_heart": MODEL_DIR / "voices" / "af_heart.pt",
+    "af_bella": MODEL_DIR / "voices" / "af_bella.pt",
+    "af_nicole": MODEL_DIR / "voices" / "af_nicole.pt",
+    "af_aoede": MODEL_DIR / "voices" / "af_aoede.pt",
+    "af_kore": MODEL_DIR / "voices" / "af_kore.pt",
+    "af_sarah": MODEL_DIR / "voices" / "af_sarah.pt",
+    "af_nova": MODEL_DIR / "voices" / "af_nova.pt",
+    "af_sky": MODEL_DIR / "voices" / "af_sky.pt",
+    "af_alloy": MODEL_DIR / "voices" / "af_alloy.pt",
+    "af_jessica": MODEL_DIR / "voices" / "af_jessica.pt",
+    "af_river": MODEL_DIR / "voices" / "af_river.pt",
+    "bf_emma": MODEL_DIR / "voices" / "bf_emma.pt",
+    "bf_isabella": MODEL_DIR / "voices" / "bf_isabella.pt",
+    "bf_alice": MODEL_DIR / "voices" / "bf_alice.pt",
+    "bf_lily": MODEL_DIR / "voices" / "bf_lily.pt",
+    # 历史数据兼容：旧记录里存的是 aria/guy 或完整声音名
+    "aria": MODEL_DIR / "voices" / "af_heart.pt",
+    "guy": MODEL_DIR / "voices" / "af_heart.pt",
     "en-US-AriaNeural": MODEL_DIR / "voices" / "af_heart.pt",
-    "en-US-GuyNeural": MODEL_DIR / "voices" / "am_michael.pt",
+    "en-US-GuyNeural": MODEL_DIR / "voices" / "af_heart.pt",
 }
+
+# 音色文件缺失检查（服务器上需确保全部 .pt 已就位）
+import os as _os
+_missing = [k for k, p in KOKORO_VOICES.items() if not _os.path.exists(p)]
+if _missing:
+    import logging
+    logging.getLogger(__name__).warning("缺少音色文件: %s", _missing)
 
 # 前端语速 -> kokoro speed
 KOKORO_SPEED = {1.0: 1.0, 0.85: 0.8, 0.75: 0.65, 0.5: 0.45}

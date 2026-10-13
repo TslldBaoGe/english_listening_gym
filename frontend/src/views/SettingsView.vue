@@ -90,10 +90,9 @@
           </div>
         </el-form-item>
         <el-form-item label="声音">
-          <el-radio-group v-model="form.voice">
-            <el-radio value="aria">Aria（女）</el-radio>
-            <el-radio value="guy">Guy（男）</el-radio>
-          </el-radio-group>
+          <el-select v-touch-open v-model="form.voice" style="width:220px" class="mono">
+            <el-option v-for="v in VOICE_OPTIONS" :key="v.value" :label="v.label" :value="v.value" />
+          </el-select>
         </el-form-item>
         <el-form-item label="语速">
           <el-radio-group v-model="form.rate">
@@ -119,6 +118,7 @@ import { ElMessage, ElMessageBox } from '../utils/message'
 import api from '../api'
 import { useSettingsStore } from '../stores/settings'
 import SkyButton from '../components/SkyButton.vue'
+import { VOICE_OPTIONS, normalizeVoice } from '../utils/voices'
 
 const store = useSettingsStore()
 // 首帧同步用缓存的难度配置，完整文案立刻可显示（后台再刷新）
@@ -134,7 +134,7 @@ const legacy = ref({})            // 旧的单条配置（列表为空时可一�
 
 // 首帧同步恢复上次的表单值，进页面不会先显示硬编码默认再跳变
 const form = reactive((() => {
-  const fallback = { difficulty: 'L1', topic: 'daily life', voice: 'aria', rate: 1.0 }
+  const fallback = { difficulty: 'L1', topic: 'daily life', voice: 'af_heart', rate: 1.0 }
   try {
     const c = JSON.parse(localStorage.getItem('el-settings-form-cache'))
     return c && typeof c === 'object' ? { ...fallback, ...c } : fallback
@@ -163,7 +163,7 @@ onMounted(async () => {
   providers.value = (await api.get('/settings/llm/providers')).data
   await store.load()
   Object.assign(form, { difficulty: store.difficulty, topic: store.topic,
-                        voice: store.voice, rate: store.rate })
+                        voice: normalizeVoice(store.voice), rate: store.rate })
   await loadConfigs()
 })
 

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import api from '../api'
 
 export const useSettingsStore = defineStore('settings', {
-  state: () => ({ difficulty: 'L1', topic: 'daily life', voice: 'aria', rate: 1.0,
+  state: () => ({ difficulty: 'L1', topic: 'daily life', voice: 'af_heart', rate: 1.0,
                   topics: [], loaded: false,
                   // 循环播放是纯前端偏好，直接存本机
                   loop: localStorage.getItem('el-loop') === '1' }),
