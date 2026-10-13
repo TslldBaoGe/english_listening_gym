@@ -1,5 +1,5 @@
 # === Backend Dockerfile ===
-# Python FastAPI + ChromaDB + Edge-TTS
+# Python FastAPI + ChromaDB + Kokoro TTS (本地离线合成)
 
 FROM python:3.11-slim
 
@@ -16,11 +16,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Kokoro TTS（本地离线）：CPU 版 torch + kokoro + soundfile
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
+    && pip install --no-cache-dir kokoro soundfile
+
 # Copy backend code
 COPY backend/ .
 
 # Create data directories
-RUN mkdir -p /app/data/audio /app/data/chroma
+RUN mkdir -p /app/data/audio /app/data/chroma /app/data/kokoro/voices
 
 EXPOSE 8000
 
