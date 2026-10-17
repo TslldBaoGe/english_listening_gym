@@ -38,6 +38,10 @@
 
     <div class="card">
       <p class="mono" style="color:var(--text-dim)">共 {{ total }} 句</p>
+      <div v-if="selectedIds.length" style="margin-bottom:10px;display:flex;align-items:center;gap:8px">
+        <span class="mono" style="font-size:12px">已选 {{ selectedIds.length }} 句</span>
+        <SkyButton size="small" variant="danger" @click="deleteSelected">删除选中</SkyButton>
+      </div>
       <div v-for="it in items" :key="it.id" style="padding:12px 0;border-bottom:1px solid var(--border)">
         <div class="mono" style="color:var(--accent-2);font-size:12px">
           {{ it.difficulty }} · {{ it.topic }} · 错{{ it.wrong_count }}/共{{ it.total_count }}
@@ -46,6 +50,7 @@
         <p class="mono" style="color:var(--text-strong);margin:6px 0">{{ it.text }}</p>
         <p style="color:var(--text-dim);margin:4px 0">{{ it.translation }}</p>
         <div style="display:flex;gap:10px;align-items:center">
+          <el-checkbox v-model="selectedIds" :value="it.id" size="small" />
           <AudioPlayer :sentence-id="it.id" :rate="1.0" :loop="store.loop"
                        @update:loop="store.setLoop" />
           <SkyButton v-if="it.mastered" size="small" variant="ghost" :delay="0.6"
@@ -79,9 +84,10 @@ const difficulties = ref((() => {
 })())
 const items = ref([])
 const total = ref(0)
-const topicList = ref([])      // 知识库里实际有的主题 + 句数
+const topicList = ref([])
 const q = reactive({ page: 1, size: 20, difficulty: null, topic: null,
                      keyword: '', mastered: '' })
+const selectedIds = ref([])   // 当前选中的句子 ID（用于批量删除）
 
 // 主题下拉：用知识库里真实存在的主题（都带句数）；当前筛选项若不在其中也补上
 const topicOptions = computed(() => {
@@ -125,6 +131,11 @@ async function load() {
   items.value = data.items
   total.value = data.total
   topicList.value = topics.data.items
+  // 当前页被删光了，退回上一页（防止停在空页）
+  if (items.value.length === 0 && q.page > 1) {
+    q.page--
+    load()
+  }
 }
 
 async function del(id) {
@@ -140,5 +151,19 @@ async function setMastered(it, mastered) {
   ElMessage.success(mastered ? '已标记为掌握，测验不再抽到它' : '已重新加入测验')
   // 正在按掌握情况筛选时重新拉一次，行会随之移出/移入列表
   if (masteredParam() !== undefined) load()
+}
+
+/** 批量删除选中的句子 */
+async function deleteSelected() {
+  const ids = [...selectedIds.value]
+  if (!ids.length) return
+  await ElMessageBox.confirm(`确定删除选中的 ${ids.length} 句吗？\n删除后无法恢复（含向量与音频）`,
+    '批量删除', { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' })
+  for (const id of ids) {
+    await api.deleteSentence(id)
+  }
+  ElMessage.success(`已删除 ${ids.length} 句`)
+  selectedIds.value = []
+  load()
 }
 </script>
