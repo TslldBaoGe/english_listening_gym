@@ -12,7 +12,7 @@
             <el-radio-button value="drill">只练未掌握主题</el-radio-button>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="难度">
+        <el-form-item v-if="mode === 'normal'" label="难度">
           <el-select v-model="form.difficulty" v-touch-open style="width:200px">
             <el-option v-for="d in difficulties" :key="d.code"
               :label="`${d.code} ${d.label}（雅思 ${d.ielts} / ${d.cefr}）`" :value="d.code" />
@@ -188,9 +188,7 @@ async function generate() {
     let data
     if (mode.value === 'drill') {
       // 只练未掌握主题：后端汇总未掌握主题后生成，主题词组拼在一起
-      const res = await api.generateThemeDrill({
-        difficulty: form.difficulty, voice: form.voice,
-      })
+      const res = await api.generateThemeDrill({ voice: form.voice })
       data = res.data
       loadDrillTopics()   // 生成后刷新一下（不影响主题集合，但保持一致）
     } else {
