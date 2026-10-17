@@ -6,13 +6,19 @@
 
     <div class="card" style="margin-bottom:20px">
       <el-form inline>
+        <el-form-item label="模式">
+          <el-radio-group v-model="mode" @change="onModeChange">
+            <el-radio-button value="normal">普通生成</el-radio-button>
+            <el-radio-button value="drill">只练未掌握主题</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
         <el-form-item label="难度">
           <el-select v-model="form.difficulty" v-touch-open style="width:200px">
             <el-option v-for="d in difficulties" :key="d.code"
               :label="`${d.code} ${d.label}（雅思 ${d.ielts} / ${d.cefr}）`" :value="d.code" />
           </el-select>
         </el-form-item>
-        <el-form-item label="主题">
+        <el-form-item v-if="mode === 'normal'" label="主题">
           <div style="display:flex;gap:8px">
             <el-select v-touch-open v-model="form.topic" style="width:180px" placeholder="下拉选择一个主题">
               <el-option v-for="t in topicOptions" :key="t" :label="t" :value="t" />
@@ -38,9 +44,17 @@
           <SkyButton size="small" variant="ghost" @click="clearAll">清空列表</SkyButton>
         </el-form-item>
       </el-form>
-      <div class="hint" style="margin-top:-6px">
+      <div v-if="mode === 'normal'" class="hint" style="margin-top:-6px">
         难度 / 主题 / 声音 / 语速 取 05 设置里的默认值；主题只能从下拉里选，
         要加新主题点旁边的「＋ 新增」（主题列表与 05 设置共用）。
+      </div>
+      <div v-else class="hint" style="margin-top:-6px">
+        当前未掌握主题：
+        <span style="color:var(--accent)">
+          {{ drillTopics.length ? drillTopics.map(t => `${t.topic}(${t.count})`).join('、') : '暂无（知识库里没有未掌握的句子）' }}
+        </span>
+        <br />
+        生成的句子只会用这些主题的词组，并尽量把多个主题拼进同一句，专门练没掌握的词。
       </div>
     </div>
 
@@ -83,20 +97,24 @@ const difficulties = ref((() => {
   try { return JSON.parse(localStorage.getItem('el-meta-cache'))?.difficulties || [] } catch { return [] }
 })())
 const form = reactive({ difficulty: 'L1', topic: 'daily life', count: 1, voice: 'af_heart' })
+// 模式：normal = 普通生成（选主题）；drill = 只练未掌握主题（主题自动汇总）
+const mode = ref('normal')
+const drillTopics = ref([])   // [{ topic, count }] 知识库里未掌握的主题
 const items = ref([])
 const revealed = reactive({})
 const generating = ref(false)
 
-// 记住上次的一切：难度/主题/声音/数量/已生成的句子/展开状态。
+// 记住上次的一切：难度/主题/声音/数量/模式/已生成的句子/展开状态。
 // 05 设置里的默认值只在第一次访问（还没有历史记录）时生效。
 const viewState = useViewState('el-practice-state-v1',
   () => ({ count: form.count, difficulty: form.difficulty, topic: form.topic,
-           voice: form.voice, items: items.value, revealed: { ...revealed } }),
+           voice: form.voice, mode: mode.value, items: items.value, revealed: { ...revealed } }),
   (saved) => {
     if (saved.difficulty) form.difficulty = saved.difficulty
     if (saved.topic) form.topic = saved.topic
     if (saved.voice) form.voice = normalizeVoice(saved.voice)
     if (saved.count) form.count = saved.count
+    if (saved.mode === 'drill' || saved.mode === 'normal') mode.value = saved.mode
     if (Array.isArray(saved.items)) items.value = saved.items
     Object.assign(revealed, saved.revealed || {})
   })
@@ -113,7 +131,22 @@ onMounted(async () => {
   if (!hasHistory) {
     Object.assign(form, { difficulty: store.difficulty, topic: store.topic, voice: normalizeVoice(store.voice) })
   }
+  loadDrillTopics()
 })
+
+/** 未掌握主题列表（只练未掌握主题模式用） */
+async function loadDrillTopics() {
+  try {
+    const { data } = await api.unmasteredTopics()
+    drillTopics.value = data.topics || []
+  } catch (e) {
+    drillTopics.value = []
+  }
+}
+
+function onModeChange() {
+  if (mode.value === 'drill') loadDrillTopics()
+}
 
 function clearAll() {
   items.value = []
@@ -152,15 +185,31 @@ async function generate() {
   prewarm()   // 在点击手势里同步解锁音频（iOS 等严格浏览器的自动播放策略）
   generating.value = true
   try {
-    // 老数据里可能留着不在列表中的主题，顺手记进去（失败不影响生成）
-    try { await store.rememberTopic(form.topic) } catch (e) { /* 忽略 */ }
-    const { data } = await api.generate(form)
+    let data
+    if (mode.value === 'drill') {
+      // 只练未掌握主题：后端汇总未掌握主题后生成，主题词组拼在一起
+      const res = await api.generateThemeDrill({
+        difficulty: form.difficulty, count: form.count, voice: form.voice,
+      })
+      data = res.data
+      loadDrillTopics()   // 生成后刷新一下（不影响主题集合，但保持一致）
+    } else {
+      // 老数据里可能留着不在列表中的主题，顺手记进去（失败不影响生成）
+      try { await store.rememberTopic(form.topic) } catch (e) { /* 忽略 */ }
+      const res = await api.generate(form)
+      data = res.data
+    }
     // 去重：删过的句子 id 可能被数据库复用，避免列表出现重复卡片
     const seen = new Set(items.value.map(s => s.id))
     const fresh = data.sentences.filter(s => !seen.has(s.id) && seen.add(s.id))
     items.value = [...fresh, ...items.value]
     fresh.forEach(s => (revealed[s.id] = false))
-    ElMessage.success(`已生成 ${fresh.length} 句并入库`)
+    if (mode.value === 'drill') {
+      const tps = (data.topics || []).join('、')
+      ElMessage.success(`已生成 ${fresh.length} 句（未掌握主题：${tps || '无'}）`)
+    } else {
+      ElMessage.success(`已生成 ${fresh.length} 句并入库`)
+    }
     // 按钮是「生成并朗读」：生成完直接把第一句念出来
     autoplayFirst(fresh[0]?.id)
   } catch (e) {

@@ -362,3 +362,30 @@ def generate_distractors(text: str, topic: str) -> list[str]:
         'Return ONLY a JSON array of 3 strings.')
     res = _extract_json(_chat(prompt))
     return [str(s) for s in res][:3]
+
+
+def generate_theme_drill_sentences(topics: list[str], count: int = 3,
+                                   difficulty: str = "L1") -> list[dict]:
+    """基于【未掌握主题】生成句子。
+
+    每句话只能包含这些主题相关的词汇/短语，绝对不能出现其他主题的词。
+    尽量把多个未掌握主题词组拼在一起，连成自然的句子。
+    """
+    from app.config import DIFFICULTIES
+    desc = {d["code"]: d["desc"] for d in DIFFICULTIES}
+    topics_text = "、".join(topics)
+    prompt = (
+        f"你是英语听力训练专家。请根据以下【未掌握主题列表】，生成 {count} 个英文句子。\n"
+        f"【未掌握主题】：{topics_text}\n"
+        f"Difficulty ({difficulty}): {desc.get(difficulty, 'natural everyday English')}.\n\n"
+        "要求：\n"
+        "1. 每句话必须围绕上面列出的未掌握主题来写，句子里只能包含这些主题相关的词汇和短语，\n"
+        "   绝对不能出现这些主题之外的单词或话题。\n"
+        "2. 尽量把多个未掌握主题词组拼在一起，连成自然的英文句子，让学习者一次听到\n"
+        "   多个未掌握主题词组。\n"
+        "3. 语言要自然、地道，适合英语听力练习。\n"
+        "4. 每句话必须包含中文翻译。\n"
+        "5. 只输出 JSON 数组，格式：[{\"text\":\"...\",\"translation\":\"...\"}]，\n"
+        "   不要任何其他说明文字。\n"
+    )
+    return _extract_json(_chat(prompt))

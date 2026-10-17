@@ -7,9 +7,12 @@ from app.db.models import Sentence
 from app.db import vector_store
 from app.services import llm, tts
 from app.services.text_utils import similarity
-from app.config import DUP_DISTANCE, DUP_TEXT_SIM, KNOWN_VOICES
+from app.config import DUP_DISTANCE, DUP_TEXT_SIM, KNOWN_VOICES, KNOWN_VOICES
 
 router = APIRouter(prefix="/api/sentences", tags=["sentences"])
+
+# 主题专练生成的句子用这个固定主题，避免它们反过来污染「未掌握主题」列表
+DRILL_TOPIC = "未掌握主题专练"
 
 
 def _is_duplicate(text: str, db) -> bool:
@@ -25,6 +28,12 @@ class GenerateIn(BaseModel):
     topic: str = "daily life"
     count: int = 1
     voice: str = "aria"
+
+
+class ThemeDrillIn(BaseModel):
+    difficulty: str = "L1"
+    count: int = 3
+    voice: str = "af_heart"
 
 
 @router.post("/generate")
@@ -80,6 +89,79 @@ def generate(body: GenerateIn, db: Session = Depends(get_db)):
                      "通常就能立刻生成成功。")
         raise HTTPException(502, "生成失败，请重试")
     return {"sentences": results}
+
+
+@router.get("/unmastered-topics")
+def unmastered_topics(db: Session = Depends(get_db)):
+    """知识库里还有未掌握句子的主题列表（供「只练未掌握主题」模式展示）。"""
+    rows = db.execute(
+        select(Sentence.topic, func.count(Sentence.id))
+        .where(Sentence.mastered == False, Sentence.topic != DRILL_TOPIC)  # noqa: E712
+        .group_by(Sentence.topic)
+        .order_by(func.count(Sentence.id).desc(), Sentence.topic)).all()
+    return {"topics": [{"topic": t or "general", "count": int(c or 0)} for t, c in rows],
+            "total": len(rows)}
+
+
+@router.post("/generate-theme-drill")
+def generate_theme_drill(body: ThemeDrillIn, db: Session = Depends(get_db)):
+    """只练未掌握主题：把这些主题的词组拼在一起生成句子。
+
+    与普通生成的区别：
+    - 句子必须只覆盖「未掌握主题」的词，不掺杂其他主题；
+    - 允许多个主题词组拼进同一句；
+    - 不做语义去重（就是要围绕同一批主题反复听），只挡完全相同的句子。
+    """
+    rows = db.execute(
+        select(Sentence.topic, func.count(Sentence.id))
+        .where(Sentence.mastered == False, Sentence.topic != DRILL_TOPIC)  # noqa: E712
+        .group_by(Sentence.topic)
+        .order_by(func.count(Sentence.id).desc(), Sentence.topic)).all()
+    topics = [t or "general" for t, _c in rows]
+    if not topics:
+        raise HTTPException(
+            404, "知识库里没有「未掌握」的句子。先到练习页正常生成一些句子，"
+                 "测验答错或知识库里没标掌握的句子会算作未掌握。")
+
+    count = max(1, min(body.count, 5))
+    voice = body.voice if body.voice in KNOWN_VOICES else "af_heart"
+    topic_label = DRILL_TOPIC
+
+    try:
+        items = llm.generate_theme_drill_sentences(topics, count, body.difficulty)
+    except Exception as e:
+        raise HTTPException(502, f"生成失败: {e}")
+
+    results = []
+    for it in items:
+        text = str(it.get("text", "")).strip()
+        if not text:
+            continue
+        # 只挡完全相同的句子（主题专练本来就允许语义相近）
+        if db.scalar(select(Sentence.id).where(Sentence.text == text)):
+            continue
+        s = Sentence(text=text, translation=str(it.get("translation", "")),
+                     difficulty_code=body.difficulty, topic=topic_label, voice=voice)
+        db.add(s)
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            continue
+        vector_store.add(s.id, s.text, s.difficulty_code, s.topic)
+        try:
+            tts.synthesize(s.id, s.text, voice, 1.0)
+            s.has_audio = True
+            db.commit()
+        except Exception:
+            pass
+        results.append({"id": s.id, "text": s.text, "translation": s.translation,
+                        "difficulty": s.difficulty_code, "topic": s.topic,
+                        "audio_url": f"/api/audio/{s.id}"})
+
+    if not results:
+        raise HTTPException(502, "生成失败（模型没有返回可用句子），请重试")
+    return {"sentences": results, "topics": topics, "topic_label": topic_label}
 
 
 @router.get("")
