@@ -26,7 +26,7 @@
             <SkyButton size="small" variant="ghost" @click="addTopic">＋ 新增</SkyButton>
           </div>
         </el-form-item>
-        <el-form-item label="数量">
+        <el-form-item v-if="mode === 'normal'" label="数量">
           <el-input-number v-model="form.count" :min="1" :max="3" />
         </el-form-item>
         <el-form-item label="声音">
@@ -54,7 +54,7 @@
           {{ drillTopics.length ? drillTopics.map(t => `${t.topic}(${t.count})`).join('、') : '暂无（知识库里没有未掌握的句子）' }}
         </span>
         <br />
-        生成的句子只会用这些主题的词组，并尽量把多个主题拼进同一句，专门练没掌握的词。
+        生成内容 = 这些主题词本身，用逗号拼起来直接朗读（不加任何其他单词），专门练没掌握的主题词。
       </div>
     </div>
 
@@ -189,7 +189,7 @@ async function generate() {
     if (mode.value === 'drill') {
       // 只练未掌握主题：后端汇总未掌握主题后生成，主题词组拼在一起
       const res = await api.generateThemeDrill({
-        difficulty: form.difficulty, count: form.count, voice: form.voice,
+        difficulty: form.difficulty, voice: form.voice,
       })
       data = res.data
       loadDrillTopics()   // 生成后刷新一下（不影响主题集合，但保持一致）
@@ -206,7 +206,7 @@ async function generate() {
     fresh.forEach(s => (revealed[s.id] = false))
     if (mode.value === 'drill') {
       const tps = (data.topics || []).join('、')
-      ElMessage.success(`已生成 ${fresh.length} 句（未掌握主题：${tps || '无'}）`)
+      ElMessage.success(`已把 ${(data.topics || []).length} 个未掌握主题拼成朗读文本：${tps || '无'}`)
     } else {
       ElMessage.success(`已生成 ${fresh.length} 句并入库`)
     }

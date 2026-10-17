@@ -123,45 +123,48 @@ def generate_theme_drill(body: ThemeDrillIn, db: Session = Depends(get_db)):
             404, "知识库里没有「未掌握」的句子。先到练习页正常生成一些句子，"
                  "测验答错或知识库里没标掌握的句子会算作未掌握。")
 
-    count = max(1, min(body.count, 5))
     voice = body.voice if body.voice in KNOWN_VOICES else "af_heart"
-    topic_label = DRILL_TOPIC
 
+    # 不做 LLM 生成：直接把未掌握主题（单词/词组）用逗号硬拼成朗读文本
+    text = ", ".join(topics)
+    translation = "、".join(topics)
+
+    # 主题集合不变时文本相同，直接复用已存的那条（换过声音则重新合成）
+    existing = db.scalar(select(Sentence).where(Sentence.text == text))
+    if existing:
+        if existing.voice != voice:
+            existing.voice = voice
+            db.commit()
+            tts.remove_audio(existing.id)
+            try:
+                tts.synthesize(existing.id, existing.text, voice, 1.0)
+                existing.has_audio = True
+                db.commit()
+            except Exception:
+                pass
+        return {"sentences": [{
+            "id": existing.id, "text": existing.text, "translation": existing.translation,
+            "difficulty": existing.difficulty_code, "topic": existing.topic,
+            "audio_url": f"/api/audio/{existing.id}"}],
+            "topics": topics, "topic_label": DRILL_TOPIC}
+
+    s = Sentence(text=text, translation=translation,
+                 difficulty_code=body.difficulty, topic=DRILL_TOPIC, voice=voice)
+    db.add(s)
+    db.commit()
+    vector_store.add(s.id, s.text, s.difficulty_code, s.topic)
     try:
-        items = llm.generate_theme_drill_sentences(topics, count, body.difficulty)
-    except Exception as e:
-        raise HTTPException(502, f"生成失败: {e}")
+        tts.synthesize(s.id, s.text, voice, 1.0)
+        s.has_audio = True
+        db.commit()
+    except Exception:
+        pass
 
-    results = []
-    for it in items:
-        text = str(it.get("text", "")).strip()
-        if not text:
-            continue
-        # 只挡完全相同的句子（主题专练本来就允许语义相近）
-        if db.scalar(select(Sentence.id).where(Sentence.text == text)):
-            continue
-        s = Sentence(text=text, translation=str(it.get("translation", "")),
-                     difficulty_code=body.difficulty, topic=topic_label, voice=voice)
-        db.add(s)
-        try:
-            db.commit()
-        except Exception:
-            db.rollback()
-            continue
-        vector_store.add(s.id, s.text, s.difficulty_code, s.topic)
-        try:
-            tts.synthesize(s.id, s.text, voice, 1.0)
-            s.has_audio = True
-            db.commit()
-        except Exception:
-            pass
-        results.append({"id": s.id, "text": s.text, "translation": s.translation,
-                        "difficulty": s.difficulty_code, "topic": s.topic,
-                        "audio_url": f"/api/audio/{s.id}"})
-
-    if not results:
-        raise HTTPException(502, "生成失败（模型没有返回可用句子），请重试")
-    return {"sentences": results, "topics": topics, "topic_label": topic_label}
+    return {"sentences": [{
+        "id": s.id, "text": s.text, "translation": s.translation,
+        "difficulty": s.difficulty_code, "topic": s.topic,
+        "audio_url": f"/api/audio/{s.id}"}],
+        "topics": topics, "topic_label": DRILL_TOPIC}
 
 
 @router.get("")
