@@ -123,21 +123,19 @@ def synthesize(sentence_id: int, text: str, voice_key: str = "aria", rate: float
 
 
 def _normalize_loudness(p: Path):
-    """响度归一：峰值提到约 -1 dBFS，RMS 不足再补偿，让每句音量一致且够响。"""
+    """响度压缩：RMS 拉到目标响度（约 -13 dBFS，明显响亮），
+    峰值用 tanh 软限幅压住，既响又不刺耳不失真。"""
     data, sr = sf.read(str(p))
     if data.size == 0:
         return
     data = data.astype('float64')
-    peak = float(np.max(np.abs(data)))
-    if peak < 1e-4:
-        return
-    gain = 0.89 / peak                                   # 峰值 -1 dBFS
     rms = float(np.sqrt(np.mean(data ** 2)))
-    if rms * gain < 0.10:                                # 响度不足（约 -20 dBFS）则补
-        gain = min(0.10 / max(rms, 1e-6), 6.0)
-    gain = min(gain, 8.0)
-    out_data = np.clip(data * gain, -1.0, 1.0)
-    sf.write(str(p), out_data, sr)
+    if rms < 1e-4:
+        return
+    target_rms = 0.22                                    # 约 -13 dBFS
+    gain = min(target_rms / rms, 20.0)
+    out = np.tanh(data * gain)                           # 软限幅：低电平近似线性，峰值被柔压
+    sf.write(str(p), out, sr)
 
 
 def remove_audio(sentence_id: int):
